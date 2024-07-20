@@ -1,0 +1,76 @@
+# create an account_summary view
+
+CREATE OR REPLACE VIEW account_summary AS
+    SELECT
+        CONCAT(a.institution, ' - ', a.name) AS name,
+        t.account_id,
+        COUNT(*) AS transactions,
+        SUM(t.amount) AS balance,
+        MIN(t.date_time) AS start_date,
+        MAX(t.date_time) AS end_date
+    FROM transactions t
+    JOIN accounts a ON t.account_id = a.id
+    GROUP BY t.account_id, a.institution, a.name
+    ORDER BY t.account_id ASC;
+
+# same but as a query
+SELECT
+	CONCAT(a.institution, ' - ', a.name) AS name,
+    t.account_id,
+    COUNT(*) AS transactions,
+    SUM(t.amount) AS balance,
+    MIN(t.date_time) AS start_date,
+    MAX(t.date_time) AS end_date
+FROM transactions t
+JOIN accounts a ON t.account_id = a.id
+GROUP BY t.account_id, a.institution, a.name
+ORDER BY t.account_id ASC;
+
+
+# query for balance of an account_id
+SELECT
+	id,
+	date_time,
+	amount,
+	description,
+	SUM(amount) OVER (ORDER BY date_time) AS balance,
+	notes
+FROM public.transactions
+where account_id = 1
+ORDER BY date_time desc
+
+
+# monthly balance for an account
+SELECT
+    DATE_TRUNC('month', date_time) AS month,
+    SUM(amount) AS monthly_balance,
+    SUM(SUM(amount)) OVER (ORDER BY DATE_TRUNC('month', date_time)) AS cumulative_balance
+FROM public.transactions
+WHERE account_id = 3
+GROUP BY month
+ORDER BY month DESC;
+
+
+# old crowdproperty experiment
+SELECT
+    reference,
+    SUM(amount) AS balance,
+    MIN(amount) AS invested,
+    MIN(date_time) AS start_date,
+    MAX(date_time) AS end_date,
+    EXTRACT(DAY FROM (MAX(date_time) - MIN(date_time))) AS elapsed_days,
+    ROUND(
+        (((SUM(amount) + ABS(MIN(amount))) / ABS(MIN(amount))) * 100) - 100, 1) AS profit_percent,
+    ROUND(
+        CASE
+            WHEN EXTRACT(DAY FROM (MAX(date_time) - MIN(date_time))) = 0 THEN 0
+            ELSE (POWER(1 + ((((SUM(amount) + ABS(MIN(amount))) / ABS(MIN(amount))) * 100) - 100) / 100, 365 / EXTRACT(DAY FROM (MAX(date_time) - MIN(date_time)))) - 1) * 100
+        END, 1) AS apr
+FROM
+    public.transactions
+WHERE
+    account_id = 16 and reference not in ('AUTOINVEST', 'AutoInvest Top Up', 'CROWDPROPIFISA', 'CROWDPROPERTY AUTO', 'Internal Transfer')
+GROUP BY
+    reference
+ORDER BY
+    profit_percent DESC;

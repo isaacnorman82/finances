@@ -1,0 +1,9 @@
+from fastapi import APIRouter
+
+from app.rest_api.accounts import router as _accounts_router
+
+
+def get_api_router():
+    api_router = APIRouter(prefix="/api")
+    api_router.include_router(_accounts_router)
+    return api_router

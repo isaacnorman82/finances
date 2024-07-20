@@ -1,0 +1,25 @@
+services:
+  db:
+    image: postgres:16.3-alpine3.20
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres  # todo need different users for app/pgadmin/etc
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - '5432:5432'
+    volumes:
+      - db:/var/lib/postgresql/data
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    restart: always
+    ports:
+      - '8888:80'
+    env_file:
+      - .env
+      # set PGADMIN_DEFAULT_EMAIL and PGADMIN_DEFAULT_PASSWORD
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+volumes:
+  db:
+    driver: local
+  pgadmin-data:
