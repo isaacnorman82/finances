@@ -6,19 +6,22 @@ from typing import Union
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app import __version__, db_models
-from app.db import engine
+from app.db import create_account_summary_view, engine
 from app.rest_api import get_api_router
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+logging.getLogger("ofxtools").setLevel(logging.ERROR)
 
 db_models.Base.metadata.create_all(bind=engine)
+# create_account_summary_view(engine)
 
 # @asynccontextmanager
 # async def lifespan(app: FastAPI):
@@ -54,6 +57,7 @@ def _configure_app() -> FastAPI:
     )
 
     app.include_router(get_api_router())
+    app.add_middleware(LoggingMiddleware)
 
     return app
 
@@ -68,20 +72,18 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             logger.error(f"Request URL: {request.url}")
             logger.error(f"Request method: {request.method}")
             logger.error(f"Request headers: {request.headers}")
-            logger.error(f"Request body: {await request.body()}")
             logger.error(f"Stack trace: {traceback.format_exc()}")
             raise
 
 
 app = _configure_app()
-app.add_middleware(LoggingMiddleware)
 
 
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     logger.error(f"HTTP error occurred: {exc.detail}")
     logger.error(f"Request URL: {request.url}")
-    # logger.error(f"Stack trace: {traceback.format_exc()}")
+
     return JSONResponse(
         status_code=exc.status_code,
         content={"detail": exc.detail},
@@ -92,20 +94,23 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     logger.error(f"Validation error occurred: {exc.errors()}")
     logger.error(f"Request URL: {request.url}")
-    logger.error(f"Body: {await request.body()}")
-    # logger.error(f"Stack trace: {traceback.format_exc()}")
+
     return JSONResponse(
         status_code=422,
         content={"detail": exc.errors()},
     )
 
 
-# # temp
-# @app.get("/")
-# def read_root():
-#     return {"Hello": "World"}
+@app.exception_handler(SQLAlchemyError)
+async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
+    # Log the error details
+    logger.error(f"Request URL: {request.url}")
+    logger.error(f"SQLAlchemy error: {str(exc)}")
 
-
-# @app.get("/items/{item_id}")
-# def read_item(item_id: int, q: Union[str, None] = None):
-#     return {"item_id": item_id, "q": q}
+    # Return a user-friendly error message
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": f"An internal server error occurred.  SQLAlchemyError - {exc.__class__.__name__}"
+        },
+    )

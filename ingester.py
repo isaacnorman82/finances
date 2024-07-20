@@ -50,8 +50,10 @@ def post_transactions(account: Account, transaction_file):
             f"http://localhost:8000/api/accounts/{account.id}/transactions/?ingest_type={account.default_ingest_type}",
             files=files,
         )
-    response.raise_for_status()
+
     print(response.json())
+
+    response.raise_for_status()
 
 
 def main():
@@ -100,4 +102,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        exit(1)

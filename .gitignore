@@ -160,3 +160,4 @@ cython_debug/
 #.idea/
 
 ingest_data
+ingest_all.sh

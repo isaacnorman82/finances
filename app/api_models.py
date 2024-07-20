@@ -59,6 +59,7 @@ class TransactionCreate(BaseModel):
     amount: Decimal
     transaction_type: Optional[str] = None
     description: Optional[str] = None
+    reference: Optional[str] = None
     notes: Optional[str] = None
 
     @field_validator("amount", mode="before")
@@ -73,6 +74,7 @@ class Transaction(TransactionCreate):
 
 
 class IngestResult(BaseModel):
+    account_id: int
     transactions_deleted: int = 0
     transactions_inserted: int = 0
     start_date: Optional[datetime] = None

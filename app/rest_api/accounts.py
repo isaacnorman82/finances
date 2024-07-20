@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional, Union
@@ -10,6 +11,7 @@ from app import api_models, crud, db_models
 from app.db import get_db_session
 from app.ingest import ingest_file
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/accounts", tags=["Accounts"])
 
 
@@ -121,14 +123,17 @@ def api_ingest_transactions(
     account: db_models.Account = Depends(get_account_from_path),
     db_session: Session = Depends(get_db_session),
 ):
+    logger.info("ingesting")
     if ingest_type is None:
         ingest_type = account.default_ingest_type
-    return ingest_file(
+    result = ingest_file(
         account_id=account.id,
         ingest_type=ingest_type,
         file=upload_file.file,
         db_session=db_session,
     )
+    logger.info(f"Ingest result: {result}")
+    return result
 
 
 @router.get(

@@ -11,6 +11,7 @@ from typing import Any, Dict, Iterable, List, Optional, Set
 from fastapi import HTTPException, status
 from ofxtools.Parser import OFXTree
 from sqlalchemy import delete, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import api_models, db_models
@@ -22,11 +23,12 @@ logger = logging.getLogger(__name__)
 class FileIngester(ABC):
     account_id: int
     db_session: Session
-    transactions: List[db_models.Transaction] = []
+    transactions: List[db_models.Transaction]
 
     def __init__(self, account_id: int, db_session: Session):
         self.account_id = account_id
         self.db_session = db_session
+        self.transactions = []
 
     @abstractmethod
     def ingest(self, file: SpooledTemporaryFile) -> api_models.IngestResult:
@@ -44,7 +46,7 @@ class FileIngester(ABC):
     # nationwide could always insert after existing entires up until end_date-1, should avoid incomplete days
     # crowd property prob won't have tagging so could just replace or could use the more exact times to just add new ones
     def store_transactions(self) -> api_models.IngestResult:
-        result: api_models.IngestResult = api_models.IngestResult()
+        result: api_models.IngestResult = api_models.IngestResult(account_id=self.account_id)
 
         if not self.transactions:
             return result
@@ -72,6 +74,16 @@ class OFXFileIngester(FileIngester):
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
+
+            # # Read the contents of the SpooledTemporaryFile into memory
+            # file_contents = file.read()
+
+            # # Create an in-memory file-like object from the file contents
+            # file_stream = io.BytesIO(file_contents)
+
+            # logger.info("Parsing OFX file")
+            # parser.parse(file_stream)
+
             parser.parse(file)
 
             # work around for this issue https://github.com/csingley/ofxtools/issues/188
@@ -85,6 +97,8 @@ class OFXFileIngester(FileIngester):
 
             ofx = parser.convert()
 
+        logger.info(f"Found {len(ofx.statements[0].transactions)} transactions in OFX file")
+
         self.transactions = [
             db_models.Transaction(
                 account_id=self.account_id,
@@ -92,7 +106,7 @@ class OFXFileIngester(FileIngester):
                 amount=tx.trnamt,
                 transaction_type=tx.trntype,
                 description=tx.name,
-                fitid=tx.fitid,
+                # fitid=tx.fitid,
             )
             for tx in ofx.statements[0].transactions
         ]
@@ -142,16 +156,20 @@ class CrowdPropertyIngester(CSVFileIngester):
     REQUIRED_FIELDS = {"Date", "Transaction", "Type", "To", "Reference"}
 
     def create_transaction_from_record(self, record: Dict[str, str]) -> None:
-        self.transactions.append(
-            super().create_transaction(
-                date_str=record["Date"],
-                date_fmt="%d-%b-%Y %H:%M:%S",
-                amount=Decimal(record["Transaction"]),
-                transaction_type=record["Type"],
-                description=record["To"],
-                reference=record["Reference"],
+        if record["Type"] in ["Not Set", "Interest Payment - Reinvest"]:
+            # we only want an accurate balance from this data so only
+            # use deposits and interest.  This might miss issues such as
+            # investments that only pay back partial amounts.
+            self.transactions.append(
+                super().create_transaction(
+                    date_str=record["Date"],
+                    date_fmt="%d-%b-%Y %H:%M:%S",
+                    amount=Decimal(record["Transaction"]),
+                    transaction_type=record["Type"],
+                    description=record["To"],
+                    reference=record["Reference"],
+                )
             )
-        )
 
 
 class MoneyFarmIngester(CSVFileIngester):

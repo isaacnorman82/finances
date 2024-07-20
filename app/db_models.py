@@ -54,7 +54,7 @@ class Transaction(Base):
     # optional fields
     transaction_type = OptCol(String, index=True)
     description = OptCol(String, index=True)
-    fitid = OptCol(String, index=True, unique=True)
+    # fitid = OptCol(String, index=True, unique=True)
     reference = OptCol(String, index=True)
     notes = OptCol(String, index=True)
 
