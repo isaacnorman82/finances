@@ -62,6 +62,14 @@ export interface BalanceResult {
   end_date?: string | null;
 }
 
+export interface MonthlyBalanceResult {
+  account_id: number;
+  monthly_balances: Array<{
+    month: string; // e.g., "2024-07"
+    balance: string;
+  }>;
+}
+
 export interface IngestResult {
   account_id: number;
   transactions_deleted?: number;

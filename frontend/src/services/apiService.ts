@@ -6,6 +6,7 @@ import type {
   AccountCreate,
   BalanceResult,
   IngestResult,
+  MonthlyBalanceResult,
   Transaction,
 } from "../types";
 
@@ -130,5 +131,19 @@ export const getAccountBalance = async (
       end_date: endDate,
     },
   });
+  return response.data;
+};
+
+/**
+ * Get the monthly balances for a specific account.
+ * @param accountId - The ID of the account
+ * @returns A promise that resolves to the monthly balance result
+ */
+export const getMonthlyBalances = async (
+  accountId: number
+): Promise<MonthlyBalanceResult> => {
+  const response = await apiClient.get(
+    `/accounts/${accountId}/monthly_balances/`
+  );
   return response.data;
 };
