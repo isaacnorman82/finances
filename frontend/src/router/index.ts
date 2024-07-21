@@ -1,11 +1,21 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
-import HomeView from "../views/HomeView.vue";
+import AccountDetailsView from "../views/AccountDetailsView.vue";
+import AccountsView from "../views/AccountsView.vue";
 
 const routes: Array<RouteRecordRaw> = [
   {
     path: "/",
-    name: "home",
-    component: HomeView,
+    redirect: "/accounts",
+  },
+  {
+    path: "/accounts",
+    name: "accounts",
+    component: AccountsView,
+  },
+  {
+    path: "/account-details/:id",
+    name: "account-details",
+    component: AccountDetailsView,
   },
   {
     path: "/about",
@@ -15,14 +25,6 @@ const routes: Array<RouteRecordRaw> = [
     // which is lazy-loaded when the route is visited.
     component: () =>
       import(/* webpackChunkName: "about" */ "../views/AboutView.vue"),
-  },
-  {
-    path: "/account-summary",
-    name: "account-summary",
-    component: () =>
-      import(
-        /* webpackChunkName: "account-summary" */ "../views/AccountSummaryView.vue"
-      ),
   },
 ];
 

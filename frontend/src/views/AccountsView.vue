@@ -1,6 +1,6 @@
 <template>
   <div class="container">
-    <h1>Account Summary</h1>
+    <h1>Accounts</h1>
     <div class="filters">
       <div class="filter">
         <label for="activeFilter">Hide Closed Accounts:</label>
@@ -23,7 +23,11 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="account in sortedAccounts" :key="account.id">
+        <tr
+          v-for="account in sortedAccounts"
+          :key="account.id"
+          @click="navigateToAccountDetails(account.id)"
+        >
           <td>{{ account.institution }}</td>
           <td>{{ account.name }}</td>
           <td
@@ -50,7 +54,14 @@ import { getAccounts, getAccountBalance } from "../services/apiService";
 import type { Account, BalanceResult, ExtendedAccount } from "../types";
 
 export default defineComponent({
-  name: "AccountSummaryView",
+  name: "AccountsView",
+
+  methods: {
+    navigateToAccountDetails(accountId: number) {
+      this.$router.push({ name: "account-details", params: { id: accountId } });
+    },
+  },
+
   setup() {
     const accounts = ref<ExtendedAccount[]>([]);
     const sortKey = ref<keyof Account>("name");
