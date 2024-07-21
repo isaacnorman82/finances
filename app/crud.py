@@ -5,7 +5,7 @@ from typing import List, Optional
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app import db_models
+from app import api_models, db_models
 
 
 def get_account(account_id: int, db_session: Session) -> Optional[db_models.Account]:
@@ -46,14 +46,30 @@ def get_balance(
     account_id: Optional[int] = None,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
-) -> Decimal:
-    query = db_session.query(func.sum(db_models.Transaction.amount))
+) -> api_models.BalanceResult:
+    balance_query = db_session.query(func.sum(db_models.Transaction.amount))
+    max_date_query = db_session.query(func.max(db_models.Transaction.date_time))
 
+    # Apply filters to both queries
     if account_id:
-        query = query.filter(db_models.Transaction.account_id == account_id)
+        balance_query = balance_query.filter(db_models.Transaction.account_id == account_id)
+        max_date_query = max_date_query.filter(db_models.Transaction.account_id == account_id)
     if start_date:
-        query = query.filter(db_models.Transaction.date_time >= start_date)
+        balance_query = balance_query.filter(db_models.Transaction.date_time >= start_date)
+        max_date_query = max_date_query.filter(db_models.Transaction.date_time >= start_date)
     if end_date:
-        query = query.filter(db_models.Transaction.date_time <= end_date)
+        balance_query = balance_query.filter(db_models.Transaction.date_time <= end_date)
+        max_date_query = max_date_query.filter(db_models.Transaction.date_time <= end_date)
 
-    return query.scalar()
+    # Execute the queries
+    balance = balance_query.scalar() or Decimal(0)
+    last_transaction_date = max_date_query.scalar()
+
+    # Create and return the result
+    return api_models.BalanceResult(
+        account_id=account_id,
+        balance=balance,
+        last_transaction_date=last_transaction_date,
+        start_date=start_date,
+        end_date=end_date,
+    )

@@ -139,7 +139,7 @@ def api_ingest_transactions(
 @router.get(
     "/{account_id}/balance/",
     summary="Get the account balance, optionaly for a specified time frame",
-    response_model=Decimal,
+    response_model=api_models.BalanceResult,
 )
 def api_get_account_balance(
     account_id: int,

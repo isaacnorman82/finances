@@ -5,6 +5,7 @@ from typing import Union
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -58,6 +59,14 @@ def _configure_app() -> FastAPI:
 
     app.include_router(get_api_router())
     app.add_middleware(LoggingMiddleware)
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:8080"],  # Allow requests from your Vue app's origin
+        allow_credentials=True,
+        allow_methods=["*"],  # Allow all methods
+        allow_headers=["*"],  # Allow all headers
+    )
 
     return app
 

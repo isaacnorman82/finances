@@ -79,3 +79,11 @@ class IngestResult(BaseModel):
     transactions_inserted: int = 0
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
+
+
+class BalanceResult(BaseModel):
+    account_id: int
+    balance: Decimal
+    last_transaction_date: Optional[datetime] = None  # optional in case no transactions were found
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None

@@ -14,4 +14,18 @@
     "isort.args": ["--profile", "black"],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
+    "[typescript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[vue]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "eslint.validate": [
+        "javascript",
+        "javascriptreact",
+        "typescript",
+        "typescriptreact",
+        "vue"
+    ],
+    "eslint.lintTask.enable": true,
 }
