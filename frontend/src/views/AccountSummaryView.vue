@@ -47,12 +47,12 @@
 <script lang="ts">
 import { defineComponent, ref, computed, onMounted } from "vue";
 import { getAccounts, getAccountBalance } from "../services/apiService";
-import type { Account, BalanceResult } from "../types";
+import type { Account, BalanceResult, ExtendedAccount } from "../types";
 
 export default defineComponent({
   name: "AccountSummaryView",
   setup() {
-    const accounts = ref<Account[]>([]);
+    const accounts = ref<ExtendedAccount[]>([]);
     const sortKey = ref<keyof Account>("name");
     const sortOrder = ref<string>("asc");
     const isActiveFilter = ref<boolean>(true);
@@ -61,7 +61,7 @@ export default defineComponent({
     const fetchAccounts = async () => {
       try {
         const fetchedAccounts = await getAccounts();
-        const accountsWithDetails = await Promise.all(
+        const accountsWithDetails: ExtendedAccount[] = await Promise.all(
           fetchedAccounts.map(async (account: Account) => {
             const balanceResult: BalanceResult = await getAccountBalance(
               account.id
@@ -84,8 +84,8 @@ export default defineComponent({
     });
 
     const filteredAccounts = computed(() => {
-      return accounts.value.filter(
-        (account) => account.is_active === isActiveFilter.value
+      return accounts.value.filter((account) =>
+        isActiveFilter.value ? account.is_active : true
       );
     });
 

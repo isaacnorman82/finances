@@ -79,3 +79,8 @@ export interface ValidationError {
   msg: string;
   type: string;
 }
+
+export interface ExtendedAccount extends Account {
+  balance: string;
+  lastTransactionDate?: string | null; // Include other properties added in fetchAccounts.
+}
