@@ -1,4 +1,5 @@
-from datetime import datetime
+import logging
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import List, Optional
 
@@ -6,6 +7,8 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app import api_models, db_models
+
+logger = logging.getLogger(__name__)
 
 
 def get_account(account_id: int, db_session: Session) -> Optional[db_models.Account]:
@@ -73,3 +76,81 @@ def get_balance(
         start_date=start_date,
         end_date=end_date,
     )
+
+
+def get_first_day_of_next_month(date: datetime) -> datetime:
+    next_month = date.replace(day=28) + timedelta(days=4)  # this will never fail
+    return next_month.replace(day=1)
+
+
+def get_monthly_balances(
+    db_session: Session,
+    account_ids: Optional[List[int]] = None,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+) -> List[api_models.MonthlyBalanceResult]:
+
+    if end_date:
+        end_date = get_first_day_of_next_month(end_date)
+        logger.info(f"end_date: {end_date}")
+
+    # Build the base query
+    base_query = db_session.query(
+        db_models.Transaction.account_id,
+        func.date_trunc("month", db_models.Transaction.date_time).label("month"),
+        func.sum(db_models.Transaction.amount).label("monthly_balance"),
+    ).group_by(
+        db_models.Transaction.account_id, func.date_trunc("month", db_models.Transaction.date_time)
+    )
+
+    # Apply filters if provided
+    if account_ids is not None:
+        base_query = base_query.filter(db_models.Transaction.account_id.in_(account_ids))
+
+    if start_date is not None:
+        base_query = base_query.filter(db_models.Transaction.date_time >= start_date)
+
+    if end_date is not None:
+        base_query = base_query.filter(db_models.Transaction.date_time < end_date)
+
+    # Subquery for cumulative balance
+    subquery = base_query.subquery()
+
+    cumulative_balance_query = (
+        db_session.query(
+            subquery.c.account_id,
+            subquery.c.month,
+            subquery.c.monthly_balance,
+            func.sum(subquery.c.monthly_balance)
+            .over(partition_by=subquery.c.account_id, order_by=subquery.c.month)
+            .label("cumulative_balance"),
+        )
+        .order_by(subquery.c.account_id, subquery.c.month)
+        .all()
+    )
+
+    # Process results
+    results = {}
+    for row in cumulative_balance_query:
+        account_id = row.account_id
+        year_month_str = row.month.strftime("%Y-%m")
+
+        if account_id not in results:
+            results[account_id] = api_models.MonthlyBalanceResult(
+                account_id=account_id,
+                monthly_balances=[],
+                start_year_month=year_month_str,
+                end_year_month=year_month_str,
+            )
+        else:
+            results[account_id].end_year_month = year_month_str
+
+        monthly_balance = api_models.MonthlyBalance(
+            year_month=year_month_str,
+            monthly_balance=Decimal(row.monthly_balance),
+            cumulative_balance=Decimal(row.cumulative_balance),
+        )
+
+        results[account_id].monthly_balances.append(monthly_balance)
+
+    return list(results.values())

@@ -147,8 +147,6 @@ def api_get_account_balance(
     end_date: Optional[datetime] = Depends(end_date_parser),
     db_session: Session = Depends(get_db_session),
 ):
-    # todo customised by ac type (i.e. crowd property)
-    # or could have an 'exclude from balance' field maybe and deal with it at ingest
     return crud.get_balance(
         db_session=db_session,
         account_id=account_id,

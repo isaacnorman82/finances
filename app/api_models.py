@@ -5,6 +5,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from enum import StrEnum, auto
 from typing import Optional
 
+from fastapi import HTTPException, status
 from pydantic import BaseModel, ConfigDict, field_validator
 
 _orm_config = ConfigDict(from_attributes=True, extra="forbid")
@@ -87,3 +88,16 @@ class BalanceResult(BaseModel):
     last_transaction_date: Optional[datetime] = None  # optional in case no transactions were found
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
+
+
+class MonthlyBalance(BaseModel):
+    year_month: str
+    monthly_balance: Decimal
+    cumulative_balance: Decimal
+
+
+class MonthlyBalanceResult(BaseModel):
+    account_id: int
+    monthly_balances: list[MonthlyBalance]
+    start_year_month: str
+    end_year_month: str
