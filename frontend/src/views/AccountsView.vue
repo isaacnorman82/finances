@@ -51,7 +51,7 @@
           <td
             :class="{
               'negative-balance': parseFloat(entry.balance) < 0,
-              blurred: hideValues,
+              'hidden-values': hideValues,
             }"
           >
             {{ hideValues ? "xxxx.xx" : formatBalance(entry.balance) }}
@@ -65,16 +65,22 @@
     <div class="total-balance">
       Total Balance: {{ hideValues ? "xxxx.xx" : formatBalance(totalBalance) }}
     </div>
+    <StackedBarChart :data="chartData" />
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent, ref, onMounted, computed } from "vue";
 import { getAccountsSummary } from "../services/apiService";
+import StackedBarChart from "../components/StackedBarChart.vue";
 import type { AccountSummary, Account } from "../types";
+import { ChartData } from "chart.js";
 
 export default defineComponent({
   name: "AccountsView",
+  components: {
+    StackedBarChart,
+  },
 
   methods: {
     navigateToAccountDetails(accountId: number) {
@@ -184,6 +190,58 @@ export default defineComponent({
       }, 0);
     });
 
+    const chartData = computed<ChartData<"bar">>(() => {
+      if (account_summaries.value.length === 0) {
+        return {
+          labels: [],
+          datasets: [],
+        };
+      }
+
+      // Extract all unique labels from all accounts
+      const uniqueDates = new Set<string>();
+      account_summaries.value.forEach((summary) => {
+        summary.monthly_balances.monthly_balances.forEach((mb) => {
+          uniqueDates.add(mb.year_month);
+        });
+      });
+
+      const labels = Array.from(uniqueDates).sort();
+
+      // Create datasets for each account, aligning data with the unique dates
+      const datasets = account_summaries.value.map((summary) => {
+        const data = labels.map((label) => {
+          const monthlyBalance = summary.monthly_balances.monthly_balances.find(
+            (mb) => mb.year_month === label
+          );
+          return monthlyBalance
+            ? parseFloat(monthlyBalance.cumulative_balance)
+            : 0;
+        });
+
+        return {
+          label: `${summary.account.institution} - ${summary.account.name}`,
+          backgroundColor: getRandomColor(), // Function to get a random color
+          data,
+        };
+      });
+
+      return {
+        labels,
+        datasets,
+      };
+    });
+
+    // Function to generate random colors for the datasets
+    function getRandomColor() {
+      const letters = "0123456789ABCDEF";
+      let color = "#";
+      for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+      }
+      return color;
+    }
+
     onMounted(() => {
       fetchAccountSummaries();
     });
@@ -199,6 +257,7 @@ export default defineComponent({
       sortKey,
       sortOrder,
       filteredSummaries,
+      chartData,
     };
   },
 });
@@ -210,6 +269,7 @@ export default defineComponent({
   flex-direction: column;
   align-items: center;
   margin: 20px;
+  height: 100vh;
 }
 
 .filters {
@@ -230,7 +290,7 @@ h1 {
 
 .account-table {
   border-collapse: collapse;
-  width: 80%; /* Adjust width as needed */
+  width: 80%;
   margin-top: 20px;
 }
 
@@ -238,7 +298,7 @@ h1 {
 .account-table td {
   border: 1px solid #ddd;
   padding: 8px;
-  text-align: center; /* Center text in cells */
+  text-align: center;
   cursor: pointer;
 }
 
@@ -258,7 +318,7 @@ h1 {
   color: red; /* Color for negative balances */
 }
 
-.blurred {
+.hidden-values {
   color: #ccc; /* Color for hidden values */
   font-weight: bold;
 }
@@ -268,5 +328,12 @@ h1 {
   font-size: 1.2em;
   font-weight: bold;
   text-align: center;
+}
+
+.chart {
+  margin-top: 20px;
+  width: 80%;
+  height: auto;
+  /* flex-grow: 1; */
 }
 </style>
