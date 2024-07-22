@@ -1,10 +1,10 @@
 <template>
-  <div class="container">
+  <div class="accounts-view">
     <h1>Accounts</h1>
     <div class="filters">
       <div class="filter">
-        <label for="activeFilter">Hide Closed Accounts:</label>
-        <input type="checkbox" id="activeFilter" v-model="isActiveFilter" />
+        <label for="hideClosed">Hide Closed Accounts:</label>
+        <input type="checkbox" id="hideClosed" v-model="hideClosed" />
       </div>
       <div class="filter">
         <label for="hideValues">Hide values:</label>
@@ -14,31 +14,51 @@
     <table class="account-table">
       <thead>
         <tr>
-          <th @click="toggleSort('institution')">Institution</th>
-          <th @click="toggleSort('name')">Name</th>
-          <th @click="toggleSort('balance')">Balance</th>
-          <th @click="toggleSort('lastTransactionDate')">
+          <th @click="sortBy('institution')">
+            Institution
+            <span v-if="sortKey === 'institution'">
+              {{ sortOrder === 1 ? "↓" : "↑" }}
+            </span>
+          </th>
+          <th @click="sortBy('name')">
+            Name
+            <span v-if="sortKey === 'name'">
+              {{ sortOrder === 1 ? "↓" : "↑" }}
+            </span>
+          </th>
+          <th @click="sortBy('balance')">
+            Balance
+            <span v-if="sortKey === 'balance'">
+              {{ sortOrder === 1 ? "↓" : "↑" }}
+            </span>
+          </th>
+          <th @click="sortBy('last_transaction_date')">
             Last Transaction Date
+            <span v-if="sortKey === 'last_transaction_date'">
+              {{ sortOrder === 1 ? "↓" : "↑" }}
+            </span>
           </th>
         </tr>
       </thead>
       <tbody>
         <tr
-          v-for="account in sortedAccounts"
-          :key="account.id"
-          @click="navigateToAccountDetails(account.id)"
+          v-for="entry in filteredSummaries"
+          :key="entry.account.id"
+          @click="navigateToAccountDetails(entry.account.id)"
         >
-          <td>{{ account.institution }}</td>
-          <td>{{ account.name }}</td>
+          <td>{{ entry.account.institution }}</td>
+          <td>{{ entry.account.name }}</td>
           <td
             :class="{
-              'negative-balance': parseFloat(account.balance) < 0,
+              'negative-balance': parseFloat(entry.balance) < 0,
               blurred: hideValues,
             }"
           >
-            {{ hideValues ? "xxxx.xx" : formatBalance(account.balance) }}
+            {{ hideValues ? "xxxx.xx" : formatBalance(entry.balance) }}
           </td>
-          <td>{{ formatLastTransactionDate(account.lastTransactionDate) }}</td>
+          <td>
+            {{ formatLastTransactionDate(entry.last_transaction_date) }}
+          </td>
         </tr>
       </tbody>
     </table>
@@ -49,9 +69,9 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed, onMounted } from "vue";
-import { getAccounts, getAccountBalance } from "../services/apiService";
-import type { Account, BalanceResult, ExtendedAccount } from "../types";
+import { defineComponent, ref, onMounted, computed } from "vue";
+import { getAccountsSummary } from "../services/apiService";
+import type { AccountSummary, Account } from "../types";
 
 export default defineComponent({
   name: "AccountsView",
@@ -60,53 +80,79 @@ export default defineComponent({
     navigateToAccountDetails(accountId: number) {
       this.$router.push({ name: "account-details", params: { id: accountId } });
     },
+
+    sortAccounts() {
+      this.account_summaries = this.account_summaries.sort((a, b) => {
+        let aValue, bValue;
+
+        if (["name", "institution"].includes(this.sortKey)) {
+          const key = this.sortKey as keyof Account;
+          aValue = a.account[key];
+          bValue = b.account[key];
+        } else {
+          const key = this.sortKey as keyof AccountSummary;
+          aValue = a[key];
+          bValue = b[key];
+        }
+
+        // Check if the values are strings or numbers and compare accordingly
+        if (typeof aValue === "string" && typeof bValue === "string") {
+          console.log("string compare");
+          return this.sortOrder * aValue.localeCompare(bValue);
+        } else if (typeof aValue === "number" && typeof bValue === "number") {
+          console.log("number compare");
+          return this.sortOrder * (aValue - bValue);
+        } else {
+          console.log("default compare");
+          console.log(typeof aValue, typeof bValue);
+        }
+
+        return 0;
+      });
+    },
+  },
+
+  watch: {
+    // Watchers to call sortAccounts when sortKey or sortOrder changes
+    sortKey() {
+      this.sortAccounts();
+    },
+    sortOrder() {
+      this.sortAccounts();
+    },
   },
 
   setup() {
-    const accounts = ref<ExtendedAccount[]>([]);
-    const sortKey = ref<keyof Account>("name");
-    const sortOrder = ref<string>("asc");
-    const isActiveFilter = ref<boolean>(true);
+    const account_summaries = ref<AccountSummary[]>([]);
+
+    const sortKey = ref<string>("name");
+    const sortOrder = ref<number>(1);
+    const hideClosed = ref<boolean>(true);
     const hideValues = ref<boolean>(false);
 
-    const fetchAccounts = async () => {
+    const fetchAccountSummaries = async () => {
       try {
-        const fetchedAccounts = await getAccounts();
-        const accountsWithDetails: ExtendedAccount[] = await Promise.all(
-          fetchedAccounts.map(async (account: Account) => {
-            const balanceResult: BalanceResult = await getAccountBalance(
-              account.id
-            );
-            return {
-              ...account,
-              balance: balanceResult.balance,
-              lastTransactionDate: balanceResult.last_transaction_date,
-            };
-          })
-        );
-        accounts.value = accountsWithDetails;
+        account_summaries.value = await getAccountsSummary();
       } catch (error) {
         console.error("Error fetching accounts:", error);
       }
     };
 
-    onMounted(() => {
-      fetchAccounts();
-    });
+    const sortBy = (key: string) => {
+      if (sortKey.value === key) {
+        sortOrder.value = -sortOrder.value;
+      } else {
+        sortKey.value = key;
+        sortOrder.value = 1;
+      }
+    };
 
-    const filteredAccounts = computed(() => {
-      return accounts.value.filter((account) =>
-        isActiveFilter.value ? account.is_active : true
-      );
-    });
-
-    const sortedAccounts = computed(() => {
-      return [...filteredAccounts.value].sort((a, b) => {
-        const aValue = a[sortKey.value] ?? "";
-        const bValue = b[sortKey.value] ?? "";
-        if (aValue < bValue) return sortOrder.value === "asc" ? -1 : 1;
-        if (aValue > bValue) return sortOrder.value === "asc" ? 1 : -1;
-        return 0;
+    const filteredSummaries = computed(() => {
+      return account_summaries.value.filter((summary) => {
+        if (hideClosed.value && !summary.account.is_active) {
+          return false;
+        }
+        return true;
       });
     });
 
@@ -133,38 +179,33 @@ export default defineComponent({
     };
 
     const totalBalance = computed(() => {
-      return filteredAccounts.value.reduce((total, account) => {
-        return total + parseFloat(account.balance);
+      return account_summaries.value.reduce((total, accountSummary) => {
+        return total + parseFloat(accountSummary.balance);
       }, 0);
     });
 
-    const toggleSort = (key: keyof Account) => {
-      if (sortKey.value === key) {
-        sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
-      } else {
-        sortKey.value = key;
-        sortOrder.value = "asc";
-      }
-    };
+    onMounted(() => {
+      fetchAccountSummaries();
+    });
 
     return {
-      accounts,
-      sortKey,
-      sortOrder,
-      isActiveFilter,
+      account_summaries,
+      hideClosed,
       hideValues,
-      sortedAccounts,
+      sortBy,
       formatBalance,
       formatLastTransactionDate,
       totalBalance,
-      toggleSort,
+      sortKey,
+      sortOrder,
+      filteredSummaries,
     };
   },
 });
 </script>
 
 <style scoped>
-.container {
+.accounts-view {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -182,6 +223,11 @@ export default defineComponent({
   align-items: center;
 }
 
+h1 {
+  color: #2c3e50;
+  margin-bottom: 20px;
+}
+
 .account-table {
   border-collapse: collapse;
   width: 80%; /* Adjust width as needed */
@@ -193,10 +239,10 @@ export default defineComponent({
   border: 1px solid #ddd;
   padding: 8px;
   text-align: center; /* Center text in cells */
+  cursor: pointer;
 }
 
 .account-table th {
-  cursor: pointer;
   background-color: #f2f2f2;
 }
 

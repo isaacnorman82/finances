@@ -19,9 +19,9 @@ def get_accounts(
     db_session: Session,
     institution: Optional[str] = None,
     name: Optional[str] = None,
-    skip: int = 0,
+    skip: int = 0,  # todo make optional
     limit: int = 100,
-) -> List[db_models.Account]:
+) -> List[api_models.Account]:
     query = db_session.query(db_models.Account)
 
     if institution:
@@ -29,34 +29,45 @@ def get_accounts(
     if name:
         query = query.filter(db_models.Account.name == name)
 
-    return query.offset(skip).limit(limit).all()
+    results = query.offset(skip).limit(limit).all()
+    return [api_models.Account.model_validate(result) for result in results]
 
 
 def get_transactions(
     account_id: int, db_session: Session, skip: int = 0, limit: int = 100
 ) -> List[db_models.Transaction]:
-    return (
+
+    results = (
         db_session.query(db_models.Transaction)
         .filter(db_models.Transaction.account_id == account_id)
         .offset(skip)
         .limit(limit)
         .all()
     )
+    return [api_models.Transaction.model_validate(result) for result in results]
 
 
 def get_balance(
     db_session: Session,
-    account_id: Optional[int] = None,
+    account_ids: Optional[List[int]] = None,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
-) -> api_models.BalanceResult:
-    balance_query = db_session.query(func.sum(db_models.Transaction.amount))
-    max_date_query = db_session.query(func.max(db_models.Transaction.date_time))
+) -> List[api_models.BalanceResult]:
+    results = []
 
-    # Apply filters to both queries
-    if account_id:
-        balance_query = balance_query.filter(db_models.Transaction.account_id == account_id)
-        max_date_query = max_date_query.filter(db_models.Transaction.account_id == account_id)
+    # Create base queries
+    balance_query = db_session.query(
+        db_models.Transaction.account_id, func.sum(db_models.Transaction.amount).label("balance")
+    )
+    max_date_query = db_session.query(
+        db_models.Transaction.account_id,
+        func.max(db_models.Transaction.date_time).label("last_transaction_date"),
+    )
+
+    # Apply filters
+    if account_ids:
+        balance_query = balance_query.filter(db_models.Transaction.account_id.in_(account_ids))
+        max_date_query = max_date_query.filter(db_models.Transaction.account_id.in_(account_ids))
     if start_date:
         balance_query = balance_query.filter(db_models.Transaction.date_time >= start_date)
         max_date_query = max_date_query.filter(db_models.Transaction.date_time >= start_date)
@@ -64,18 +75,30 @@ def get_balance(
         balance_query = balance_query.filter(db_models.Transaction.date_time <= end_date)
         max_date_query = max_date_query.filter(db_models.Transaction.date_time <= end_date)
 
-    # Execute the queries
-    balance = balance_query.scalar() or Decimal(0)
-    last_transaction_date = max_date_query.scalar()
+    # Group by account ID
+    balance_query = balance_query.group_by(db_models.Transaction.account_id)
+    max_date_query = max_date_query.group_by(db_models.Transaction.account_id)
 
-    # Create and return the result
-    return api_models.BalanceResult(
-        account_id=account_id,
-        balance=balance,
-        last_transaction_date=last_transaction_date,
-        start_date=start_date,
-        end_date=end_date,
-    )
+    # Execute the queries and create results
+    balance_results = {row.account_id: row.balance for row in balance_query.all()}
+    max_date_results = {row.account_id: row.last_transaction_date for row in max_date_query.all()}
+
+    all_account_ids = account_ids or list(balance_results.keys())
+
+    for account_id in all_account_ids:
+        balance = balance_results.get(account_id, Decimal(0))
+        last_transaction_date = max_date_results.get(account_id)
+        results.append(
+            api_models.BalanceResult(
+                account_id=account_id,
+                balance=balance,
+                last_transaction_date=last_transaction_date,
+                start_date=start_date,
+                end_date=end_date,
+            )
+        )
+
+    return results
 
 
 def get_first_day_of_next_month(date: datetime) -> datetime:

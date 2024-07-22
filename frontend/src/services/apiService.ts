@@ -4,6 +4,7 @@ import axios from "axios";
 import type {
   Account,
   AccountCreate,
+  AccountSummary,
   BalanceResult,
   IngestResult,
   MonthlyBalanceResult,
@@ -145,5 +146,10 @@ export const getMonthlyBalances = async (
   const response = await apiClient.get(
     `/accounts/${accountId}/monthly_balances/`
   );
+  return response.data;
+};
+
+export const getAccountsSummary = async (): Promise<AccountSummary[]> => {
+  const response = await apiClient.get("/accounts/summary/");
   return response.data;
 };

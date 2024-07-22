@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal
 from enum import StrEnum, auto
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import HTTPException, status
 from pydantic import BaseModel, ConfigDict, field_validator
@@ -98,6 +98,13 @@ class MonthlyBalance(BaseModel):
 
 class MonthlyBalanceResult(BaseModel):
     account_id: int
-    monthly_balances: list[MonthlyBalance]
+    monthly_balances: List[MonthlyBalance]
     start_year_month: str
     end_year_month: str
+
+
+class AccountSummary(BaseModel):
+    account: Account
+    balance: Decimal
+    monthly_balances: MonthlyBalanceResult
+    last_transaction_date: Optional[datetime] = None

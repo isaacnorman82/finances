@@ -22,8 +22,7 @@ export type IngestType =
   | "money_farm_csv"
   | "ofx_transactions";
 
-export interface Account {
-  id: number;
+export interface AccountCreate {
   institution: string;
   name: string;
   account_type: AcType;
@@ -33,14 +32,8 @@ export interface Account {
   description?: string | null;
 }
 
-export interface AccountCreate {
-  institution: string;
-  name: string;
-  account_type: AcType;
-  account_behaviour?: AcBehaviour;
-  default_ingest_type?: IngestType;
-  is_active?: boolean;
-  description?: string | null;
+export interface Account extends AccountCreate {
+  id: number;
 }
 
 export interface Transaction {
@@ -62,14 +55,6 @@ export interface BalanceResult {
   end_date?: string | null;
 }
 
-export interface MonthlyBalanceResult {
-  account_id: number;
-  monthly_balances: Array<{
-    month: string; // e.g., "2024-07"
-    balance: string;
-  }>;
-}
-
 export interface IngestResult {
   account_id: number;
   transactions_deleted?: number;
@@ -88,7 +73,22 @@ export interface ValidationError {
   type: string;
 }
 
-export interface ExtendedAccount extends Account {
+export interface MonthlyBalance {
+  year_month: string;
+  monthly_balance: string;
+  cumulative_balance: string;
+}
+
+export interface MonthlyBalanceResult {
+  account_id: number;
+  monthly_balances: MonthlyBalance[];
+  start_year_month: string;
+  end_year_month: string;
+}
+
+export interface AccountSummary {
+  account: Account;
   balance: string;
-  lastTransactionDate?: string | null; // Include other properties added in fetchAccounts.
+  monthly_balances: MonthlyBalanceResult;
+  last_transaction_date: string | null;
 }

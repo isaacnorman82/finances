@@ -66,6 +66,45 @@ def api_get_accounts(
     )
 
 
+@router.get(
+    "/summary/",
+    summary="Get a summary of all account data",
+    response_model=List[api_models.AccountSummary],
+)
+def api_get_accounts_summary(db_session: Session = Depends(get_db_session)):
+    logger.info("Getting account summary")
+    accounts: List[api_models.Account] = crud.get_accounts(db_session=db_session)
+    monthly_balance_results: List[api_models.MonthlyBalanceResult] = crud.get_monthly_balances(
+        db_session=db_session
+    )
+    balance_results: List[api_models.BalanceResult] = crud.get_balance(db_session=db_session)
+
+    results = []
+    for account in accounts:
+        # find the monthly balance result for this account
+        monthly_balance_result = next(
+            (
+                monthly_balance_result
+                for monthly_balance_result in monthly_balance_results
+                if monthly_balance_result.account_id == account.id
+            )
+        )
+        balance_result = next(
+            result for result in balance_results if result.account_id == account.id
+        )
+
+        results.append(
+            api_models.AccountSummary(
+                account=account,
+                balance=balance_result.balance,
+                monthly_balances=monthly_balance_result,
+                last_transaction_date=balance_result.last_transaction_date,
+            )
+        )
+
+    return results
+
+
 @router.get("/{account_id}/", summary="Get Account by ID", response_model=api_models.Account)
 def api_get_account(account: db_models.Account = Depends(get_account_from_path)):
     return account
@@ -142,14 +181,16 @@ def api_ingest_transactions(
     response_model=api_models.BalanceResult,
 )
 def api_get_account_balance(
-    account_id: int,
+    account_id: int,  # todo could have a depends to check its a valid id or even make this the account object using a depends
     start_date: Optional[datetime] = Depends(start_date_parser),
     end_date: Optional[datetime] = Depends(end_date_parser),
     db_session: Session = Depends(get_db_session),
 ):
     return crud.get_balance(
         db_session=db_session,
-        account_id=account_id,
+        account_ids=[account_id],
         start_date=start_date,
         end_date=end_date,
-    )
+    )[
+        0
+    ]  # todo placeholder until we ensure account_id is valid
