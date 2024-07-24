@@ -46,12 +46,15 @@ def end_year_month_parser(end_date: Optional[str] = None) -> Optional[datetime]:
     summary="Get the monthly account balance",
     response_model=List[api_models.MonthlyBalanceResult],
 )
-def api_get_account_balance(
+def api_get_monthly_account_balance(
     account_ids: Optional[List[int]] = Depends(account_ids_list_from_str),
     start_date: Optional[datetime] = Depends(start_year_month_parser),
     end_date: Optional[datetime] = Depends(end_year_month_parser),
     db_session: Session = Depends(get_db_session),
 ):
+    # todo think this doesn't work if there's a gap
+    # i.e. there's a transaction in one month, then a month without then more after
+    # there should be a monthly balance in between
     logger.info(
         f"monthly balances account_ids: {account_ids}, start_date: {start_date}, end_date: {end_date}"
     )

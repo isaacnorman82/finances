@@ -1,107 +1,110 @@
 <template>
-  <div class="chart-container">
-    <Bar v-if="data" :data="data" :options="chartOptions" />
-    <div v-else>Loading...</div>
-  </div>
+  <Bar v-if="data" :data="data" :options="chartOptions" />
+  <div v-else>Loading...</div>
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType, ref } from "vue";
-import { Bar } from "vue-chartjs";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  ChartData,
-  ChartOptions,
-} from "chart.js";
+  import {
+    BarElement,
+    CategoryScale,
+    ChartData,
+    Chart as ChartJS,
+    ChartOptions,
+    Legend,
+    LinearScale,
+    Title,
+    Tooltip,
+  } from "chart.js";
+  import { defineComponent, PropType } from "vue";
+  import { Bar } from "vue-chartjs";
 
-// Register required components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
-);
+  // Register required components
+  ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend
+  );
 
-export default defineComponent({
-  name: "StackedBarChart",
-  components: {
-    Bar,
-  },
-  props: {
-    data: {
-      type: Object as PropType<ChartData<"bar">>,
-      required: true,
+  export default defineComponent({
+    name: "StackedBarChart",
+    components: {
+      Bar,
     },
-  },
-  setup() {
-    const chartOptions: ChartOptions<"bar"> = {
-      responsive: true,
-      maintainAspectRatio: true,
-      plugins: {
-        legend: {
-          position: "bottom",
+    props: {
+      data: {
+        type: Object as PropType<ChartData<"bar">>,
+        required: true,
+      },
+    },
+    setup() {
+      const chartOptions: ChartOptions<"bar"> = {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            position: "bottom",
+          },
+          title: {
+            display: true,
+            text: "Stacked Bar Chart",
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                let label = context.dataset.label || "";
+                if (label) {
+                  label += ": ";
+                }
+                if (context.parsed.y !== null) {
+                  const value = context.parsed.y as number;
+                  label += `${value < 0 ? "-" : ""}£${Math.abs(
+                    value
+                  ).toLocaleString()}`;
+                }
+                return label;
+              },
+            },
+          },
         },
-        title: {
-          display: true,
-          text: "Stacked Bar Chart",
-        },
-        tooltip: {
-          callbacks: {
-            label: (context) => {
-              let label = context.dataset.label || "";
-              if (label) {
-                label += ": ";
-              }
-              if (context.parsed.y !== null) {
-                const value = context.parsed.y as number;
-                label += `${value < 0 ? "-" : ""}£${Math.abs(
-                  value
+        scales: {
+          x: {
+            stacked: true,
+          },
+          y: {
+            stacked: true,
+            ticks: {
+              callback: (value) => {
+                const val = value as number;
+                return `${val < 0 ? "-" : ""}£${Math.abs(
+                  val
                 ).toLocaleString()}`;
-              }
-              return label;
+              },
+              color(context) {
+                const value = context.tick.value;
+                return value < 0 ? "red" : "black";
+              },
             },
           },
         },
-      },
-      scales: {
-        x: {
-          stacked: true,
-        },
-        y: {
-          stacked: true,
-          ticks: {
-            callback: (value) => {
-              const val = value as number;
-              return `${val < 0 ? "-" : ""}£${Math.abs(val).toLocaleString()}`;
-            },
-            color: function (context) {
-              const value = context.tick.value;
-              return value < 0 ? "red" : "black";
-            },
-          },
-        },
-      },
-    };
+      };
 
-    return {
-      chartOptions,
-    };
-  },
-});
+      return {
+        chartOptions,
+      };
+    },
+  });
 </script>
 
 <style scoped>
-.chart-container {
-  width: 80%;
-  height: auto; /* Ensure the container height adjusts automatically */
-  flex-grow: 1;
-}
+  .chart-container {
+    /* width: 100%;
+    height: auto; Ensure the container height adjusts automatically */
+    position: relative;
+    /* height: 40vh; */
+    /* width: 80vw; */
+    flex-grow: 1 1 auto;
+  }
 </style>

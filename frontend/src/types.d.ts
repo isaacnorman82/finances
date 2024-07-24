@@ -63,14 +63,14 @@ export interface IngestResult {
   end_date?: string | null;
 }
 
-export interface HTTPValidationError {
-  detail: ValidationError[];
-}
-
 export interface ValidationError {
   loc: (string | number)[];
   msg: string;
   type: string;
+}
+
+export interface HTTPValidationError {
+  detail: ValidationError[];
 }
 
 export interface MonthlyBalance {

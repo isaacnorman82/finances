@@ -9,7 +9,7 @@ import type {
   IngestResult,
   MonthlyBalanceResult,
   Transaction,
-} from "../types";
+} from "../types.d.ts";
 
 // Define the base URL for the API
 const BASE_URL = "http://localhost:8000/api";
