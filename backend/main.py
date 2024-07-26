@@ -11,9 +11,9 @@ from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app import __version__, db_models
-from app.db import create_account_summary_view, engine
-from app.rest_api import get_api_router
+from backend import __version__, db_models
+from backend.db import create_account_summary_view, engine
+from backend.rest_api import get_api_router
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"

@@ -13,8 +13,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 
-from app.api_models import AcBehaviour, AcType, IngestType
-from app.db import Base
+from backend.api_models import AcBehaviour, AcType, IngestType
+from backend.db import Base
 
 ReqCol = partial(Column, nullable=False)
 OptCol = partial(Column, nullable=True)

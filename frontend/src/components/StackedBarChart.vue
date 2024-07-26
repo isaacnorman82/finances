@@ -46,6 +46,7 @@
         plugins: {
           legend: {
             position: "bottom",
+            display: false,
           },
           title: {
             display: true,
@@ -78,9 +79,7 @@
             ticks: {
               callback: (value) => {
                 const val = value as number;
-                return `${val < 0 ? "-" : ""}£${Math.abs(
-                  val
-                ).toLocaleString()}`;
+                return `£${Math.abs(val).toLocaleString()}`;
               },
               color(context) {
                 const value = context.tick.value;

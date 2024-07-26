@@ -6,7 +6,7 @@ from typing import List, Optional
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app import api_models, db_models
+from backend import api_models, db_models
 
 logger = logging.getLogger(__name__)
 
@@ -34,16 +34,32 @@ def get_accounts(
 
 
 def get_transactions(
-    account_id: int, db_session: Session, skip: int = 0, limit: int = 100
+    db_session: Session,
+    account_id: int,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    skip: int = None,
+    limit: int = None,
 ) -> List[db_models.Transaction]:
 
-    results = (
-        db_session.query(db_models.Transaction)
-        .filter(db_models.Transaction.account_id == account_id)
-        .offset(skip)
-        .limit(limit)
-        .all()
+    query = db_session.query(db_models.Transaction).filter(
+        db_models.Transaction.account_id == account_id
     )
+
+    if start_date:
+        query = query.filter(db_models.Transaction.date_time >= start_date)
+
+    if end_date:
+        query = query.filter(db_models.Transaction.date_time <= end_date)
+
+    if skip is not None:
+        query = query.offset(skip)
+
+    if limit is not None:
+        query = query.limit(limit)
+
+    results = query.all()
+
     return [api_models.Transaction.model_validate(result) for result in results]
 
 

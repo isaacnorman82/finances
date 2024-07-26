@@ -20,6 +20,39 @@
   </v-app>
 </template>
 
-<script lang="ts" setup>
-  //
+<script setup lang="ts">
+  // import { useAccountSummaries } from "@/stores/accountSummaries";
+  import { onMounted } from "vue";
+
+  // const accountSummariesStore = useAccountSummaries();
+
+  // onBeforeMount(async () => {
+  //   // console.log("onBeforeMount");
+  //   console.log("Loading account summaries");
+  //   await accountSummariesStore.loadAccountSummaries();
+  // });
+
+  onMounted(() => {
+    // Set the page title
+    document.title = "My Vuetify App";
+
+    // Set the favicon
+    setFavicon("/public/favicon.svg");
+  });
+
+  const setFavicon = (url: string) => {
+    const link: HTMLLinkElement = document.createElement("link");
+    link.type = "image/svg+xml";
+    link.rel = "icon";
+    link.href = url;
+    removeExistingFavicons();
+    document.head.appendChild(link);
+  };
+
+  const removeExistingFavicons = () => {
+    const existingFavicons = document.querySelectorAll("link[rel='icon']");
+    existingFavicons.forEach((favicon) =>
+      favicon.parentNode?.removeChild(favicon)
+    );
+  };
 </script>

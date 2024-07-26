@@ -1,5 +1,3 @@
-// types.ts
-
 export type AcBehaviour = "standard" | "crowd_property";
 
 export type AcType =

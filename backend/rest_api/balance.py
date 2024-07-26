@@ -7,9 +7,9 @@ from dateutil import parser
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
-from app import api_models, crud, db_models
-from app.db import get_db_session
-from app.ingest import ingest_file
+from backend import api_models, crud, db_models
+from backend.db import get_db_session
+from backend.ingest import ingest_file
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/balance", tags=["Balance"])

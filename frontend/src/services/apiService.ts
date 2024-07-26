@@ -74,20 +74,28 @@ export const getAccountById = async (accountId: number): Promise<Account> => {
 /**
  * Get all transactions for a specific account.
  * @param accountId - The ID of the account
+ * @param startDate - Optional start date for transactions
+ * @param endDate - Optional end date for transactions
  * @param skip - Number of records to skip
  * @param limit - Number of records to return
  * @returns A promise that resolves to an array of transactions
  */
 export const getTransactionsForAccount = async (
   accountId: number,
-  skip = 0,
-  limit = 100
+  startDate?: string,
+  endDate?: string,
+  skip?: number,
+  limit?: number
 ): Promise<Transaction[]> => {
+  const params: any = {
+    ...(startDate && { start_date: startDate }),
+    ...(endDate && { end_date: endDate }),
+    ...(skip !== undefined && { skip }),
+    ...(limit !== undefined && { limit }),
+  };
+  // console.log("params", params);
   const response = await apiClient.get(`/accounts/${accountId}/transactions/`, {
-    params: {
-      skip,
-      limit,
-    },
+    params,
   });
   return response.data;
 };

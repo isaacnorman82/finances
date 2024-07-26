@@ -14,8 +14,8 @@ from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app import api_models, db_models
-from app.api_models import IngestType
+from backend import api_models, db_models
+from backend.api_models import IngestType
 
 logger = logging.getLogger(__name__)
 
