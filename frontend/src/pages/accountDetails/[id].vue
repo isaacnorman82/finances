@@ -1,5 +1,5 @@
 <template>
-  <v-container v-if="accountSummary" style="width: 100%">
+  <v-container v-if="accountSummary">
     <v-row>
       <v-col>
         <v-breadcrumbs :items="breadcrumbs">

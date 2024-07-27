@@ -1,10 +1,18 @@
 <template>
-  <v-container style="width: 100%">
+  <v-container>
     <v-row>
       <v-col>
-        <v-breadcrumbs bg-color="primary" :items="[]">
-          <template v-slot:prepend>Accounts</template>
+        <v-breadcrumbs :items="breadcrumbs">
+          <template v-slot:item="{ item }">
+            <v-breadcrumbs-item :disabled="item.disabled" :to="item.to">
+              {{ item.title }}
+            </v-breadcrumbs-item>
+          </template>
         </v-breadcrumbs>
+      </v-col>
+    </v-row>
+    <v-row>
+      <v-col>
         <v-data-table
           :headers="tableHeaders"
           hide-default-footer
@@ -30,6 +38,10 @@
             </tr>
           </template>
         </v-data-table>
+      </v-col>
+    </v-row>
+    <v-row>
+      <v-col>
         <StackedBarChart :data="chartData" />
       </v-col>
     </v-row>
@@ -51,6 +63,15 @@
 
   const hideClosed = ref<boolean>(true);
   const router = useRouter();
+
+  const breadcrumbs = computed(() => {
+    return [
+      {
+        title: "Accounts",
+        disabled: false,
+      },
+    ];
+  });
 
   const filteredSummaries = computed(() => {
     return accountSummaries.value.filter((summary) => {
