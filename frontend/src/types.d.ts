@@ -1,32 +1,32 @@
-export type AcBehaviour = "standard" | "crowd_property";
+export type AcBehaviour = "standard" | "crowdProperty";
 
 export type AcType =
-  | "current_account"
+  | "currentAccount"
   | "asset"
-  | "cash_isa"
-  | "credit_card"
-  | "if_isa"
-  | "junior_isa"
+  | "cashIsa"
+  | "creditCard"
+  | "ifIsa"
+  | "juniorIsa"
   | "loan"
   | "mortgage"
   | "pension"
-  | "savings_account"
-  | "share_isa"
+  | "savingsAccount"
+  | "shareIsa"
   | "stockbroker";
 
 export type IngestType =
-  | "crowd_property_csv"
+  | "crowdPropertyCsv"
   | "csv"
-  | "money_farm_csv"
-  | "ofx_transactions";
+  | "moneyFarmCsv"
+  | "ofxTransactions";
 
 export interface AccountCreate {
   institution: string;
   name: string;
-  account_type: AcType;
-  account_behaviour?: AcBehaviour;
-  default_ingest_type?: IngestType;
-  is_active?: boolean;
+  accountType: AcType;
+  accountBehaviour?: AcBehaviour;
+  defaultIngestType?: IngestType;
+  isActive?: boolean;
   description?: string | null;
 }
 
@@ -36,29 +36,29 @@ export interface Account extends AccountCreate {
 
 export interface Transaction {
   id: number;
-  account_id: number;
-  date_time: string; // ISO 8601 date-time string
+  accountId: number;
+  dateTime: string; // ISO 8601 date-time string
   amount: string;
-  transaction_type?: string | null;
+  transactionType?: string | null;
   description?: string | null;
   reference?: string | null;
   notes?: string | null;
 }
 
 export interface BalanceResult {
-  account_id: number;
+  accountId: number;
   balance: string;
-  last_transaction_date?: string | null;
-  start_date?: string | null;
-  end_date?: string | null;
+  lastTransactionDate?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
 }
 
 export interface IngestResult {
-  account_id: number;
-  transactions_deleted?: number;
-  transactions_inserted?: number;
-  start_date?: string | null;
-  end_date?: string | null;
+  accountId: number;
+  transactionsDeleted?: number;
+  transactionsInserted?: number;
+  startDate?: string | null;
+  endDate?: string | null;
 }
 
 export interface ValidationError {
@@ -72,23 +72,23 @@ export interface HTTPValidationError {
 }
 
 export interface MonthlyBalance {
-  year_month: string;
-  monthly_balance: string;
-  cumulative_balance: string;
+  yearMonth: string;
+  monthlyBalance: string;
+  cumulativeBalance: string;
 }
 
 export interface MonthlyBalanceResult {
-  account_id: number;
-  monthly_balances: MonthlyBalance[];
-  start_year_month: string;
-  end_year_month: string;
+  accountId: number;
+  monthlyBalances: MonthlyBalance[];
+  startYearMonth: string;
+  endYearMonth: string;
 }
 
 export interface AccountSummary {
   account: Account;
   balance: string;
-  monthly_balances: MonthlyBalanceResult;
-  last_transaction_date: string | null;
+  monthlyBalances: MonthlyBalanceResult;
+  lastTransactionDate: string | null;
 }
 
 export enum Timescale {

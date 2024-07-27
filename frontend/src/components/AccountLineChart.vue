@@ -57,10 +57,10 @@
 
       // Extract cumulative balances
       const balancesMap = new Map(
-        props.accountSummary.monthly_balances.monthly_balances.map(
+        props.accountSummary.monthlyBalances.monthlyBalances.map(
           (mb: MonthlyBalance) => [
-            mb.year_month,
-            parseFloat(mb.cumulative_balance),
+            mb.yearMonth,
+            parseFloat(mb.cumulativeBalance),
           ]
         )
       );

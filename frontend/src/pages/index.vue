@@ -16,7 +16,7 @@
               <td>{{ item.name }}</td>
               <td v-html="formatBalance(item.balance)" />
 
-              <td>{{ item.last_transaction_date }}</td>
+              <td>{{ item.lastTransactionDate }}</td>
             </tr>
           </template>
           <template v-slot:body.append>
@@ -54,7 +54,7 @@
 
   const filteredSummaries = computed(() => {
     return accountSummaries.value.filter((summary) => {
-      if (hideClosed.value && !summary.account.is_active) {
+      if (hideClosed.value && !summary.account.isActive) {
         return false;
       }
       return true;
@@ -67,8 +67,8 @@
       institution: summary.account.institution,
       name: summary.account.name,
       balance: summary.balance,
-      last_transaction_date: formatLastTransactionDate(
-        summary.last_transaction_date
+      lastTransactionDate: formatLastTransactionDate(
+        summary.lastTransactionDate
       ),
     }));
   });
@@ -114,8 +114,8 @@
     // Extract all unique labels from all accounts
     const uniqueDates = new Set<string>();
     accountSummaries.value.forEach((summary) => {
-      summary.monthly_balances.monthly_balances.forEach((mb) => {
-        uniqueDates.add(mb.year_month);
+      summary.monthlyBalances.monthlyBalances.forEach((mb) => {
+        uniqueDates.add(mb.yearMonth);
       });
     });
 
@@ -124,11 +124,11 @@
     // Create datasets for each account, aligning data with the unique dates
     const datasets = accountSummaries.value.map((summary) => {
       const data = labels.map((label) => {
-        const monthlyBalance = summary.monthly_balances.monthly_balances.find(
-          (mb) => mb.year_month === label
+        const monthlyBalance = summary.monthlyBalances.monthlyBalances.find(
+          (mb) => mb.yearMonth === label
         );
         return monthlyBalance
-          ? parseFloat(monthlyBalance.cumulative_balance)
+          ? parseFloat(monthlyBalance.cumulativeBalance)
           : 0;
       });
 

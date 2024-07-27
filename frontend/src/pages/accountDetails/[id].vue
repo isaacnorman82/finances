@@ -53,9 +53,7 @@
               <div class="mb-4 subheading-text">
                 As of
                 {{
-                  formatLastTransactionDate(
-                    accountSummary.last_transaction_date
-                  )
+                  formatLastTransactionDate(accountSummary.lastTransactionDate)
                 }}
               </div>
             </div>
@@ -152,8 +150,8 @@
           >
             <template v-slot:item="{ item }">
               <tr>
-                <td>{{ formatDate(item.date_time) }}</td>
-                <td>{{ item.transaction_type }}</td>
+                <td>{{ formatDate(item.dateTime) }}</td>
+                <td>{{ item.transactionType }}</td>
                 <td>{{ item.description }}</td>
                 <td v-html="formatBalance(item.amount)" />
                 <td>{{ item.notes }}</td>
@@ -189,7 +187,7 @@
   import { useRoute } from "vue-router";
   import { useDate } from "vuetify";
 
-  const graphTimescale = ref<Timescale>(Timescale.All);
+  const graphTimescale = ref<Timescale>(Timescale.OneYear);
   const search = ref("");
 
   const route = useRoute("/accountDetails/[id]");
@@ -212,18 +210,18 @@
   const changeMonth = (action: MonthChangeAction) => {
     if (!accountSummary.value) return;
 
-    const { start_year_month, end_year_month } =
-      accountSummary.value.monthly_balances;
+    const { startYearMonth, endYearMonth } =
+      accountSummary.value.monthlyBalances;
 
     switch (action) {
       case MonthChangeAction.First:
         selectedDate.value = startOfMonth(
-          new Date(`${start_year_month}-01T00:00:00`)
+          new Date(`${startYearMonth}-01T00:00:00`)
         );
         break;
       case MonthChangeAction.Last:
         selectedDate.value = startOfMonth(
-          new Date(`${end_year_month}-01T00:00:00`)
+          new Date(`${endYearMonth}-01T00:00:00`)
         );
         break;
       case MonthChangeAction.Next:
@@ -240,15 +238,14 @@
 
   const atStart = computed(() => {
     if (!accountSummary.value) return true;
-    const startYearMonth =
-      accountSummary.value.monthly_balances.start_year_month;
+    const startYearMonth = accountSummary.value.monthlyBalances.startYearMonth;
     const startDate = new Date(`${startYearMonth}-01T00:00:00`);
     return selectedDate.value <= startOfMonth(startDate);
   });
 
   const atEnd = computed(() => {
     if (!accountSummary.value) return true;
-    const endYearMonth = accountSummary.value.monthly_balances.end_year_month;
+    const endYearMonth = accountSummary.value.monthlyBalances.endYearMonth;
     const endDate = new Date(`${endYearMonth}-01T00:00:00`);
     return selectedDate.value >= startOfMonth(endDate);
   });
@@ -292,11 +289,11 @@
     return [
       {
         title: "Date",
-        key: "date_time",
+        key: "dateTime",
       },
       {
         title: "Type",
-        key: "transaction_type",
+        key: "transactionType",
       },
       {
         title: "Description",

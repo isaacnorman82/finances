@@ -1,6 +1,7 @@
 // apiService.ts
 
 import axios from "axios";
+import camelcaseKeys from "camelcase-keys";
 import type {
   Account,
   AccountCreate,
@@ -10,6 +11,11 @@ import type {
   MonthlyBalanceResult,
   Transaction,
 } from "../types.d.ts";
+
+// Helper function to convert response data to camelCase
+const convertToCamelCase = (data: any) => {
+  return camelcaseKeys(data, { deep: true });
+};
 
 // Define the base URL for the API
 const BASE_URL = "http://localhost:8000/api";
@@ -21,6 +27,17 @@ const apiClient = axios.create({
     "Content-Type": "application/json",
   },
 });
+
+// Add a response interceptor to convert all responses to camelCase
+apiClient.interceptors.response.use(
+  (response) => {
+    response.data = convertToCamelCase(response.data);
+    return response;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 // Define API functions with type annotations
 
@@ -93,7 +110,6 @@ export const getTransactionsForAccount = async (
     ...(skip !== undefined && { skip }),
     ...(limit !== undefined && { limit }),
   };
-  // console.log("params", params);
   const response = await apiClient.get(`/accounts/${accountId}/transactions/`, {
     params,
   });
@@ -152,11 +168,15 @@ export const getMonthlyBalances = async (
   accountId: number
 ): Promise<MonthlyBalanceResult> => {
   const response = await apiClient.get(
-    `/accounts/${accountId}/monthly_balances/`
+    `/accounts/${accountId}/monthlyBalances/`
   );
   return response.data;
 };
 
+/**
+ * Get the summary of all accounts.
+ * @returns A promise that resolves to an array of account summaries
+ */
 export const getAccountsSummary = async (): Promise<AccountSummary[]> => {
   const response = await apiClient.get("/accounts/summary/");
   return response.data;
