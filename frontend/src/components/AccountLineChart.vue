@@ -53,7 +53,8 @@
       }
 
       const selectedDate = new Date(props.selectedDate);
-      selectedDate.setDate(1); // Ensure it's the first day of the month
+      selectedDate.setMonth(selectedDate.getMonth() + 1);
+      selectedDate.setDate(0); // Ensure it's the last day of the month
 
       // Extract cumulative balances
       const balancesMap = new Map(
@@ -68,34 +69,20 @@
       // Determine the range of months to display based on timescale
       const monthsToShow = (numMonths: number) => {
         const months = [];
-        for (let i = numMonths - 1; i >= 0; i--) {
+        for (let i = 0; i < numMonths; i++) {
           const date = new Date(selectedDate);
-          date.setMonth(date.getMonth() - i);
+          date.setMonth(selectedDate.getMonth() - i);
           months.push(date.toISOString().slice(0, 7));
         }
-        return months;
+        return months.reverse(); // Ensure the months are in chronological order
       };
 
       let months: string[];
-      switch (props.timescale) {
-        case Timescale.All:
-          months = Array.from(balancesMap.keys());
-          break;
-        case Timescale.FiveYears:
-          months = monthsToShow(5 * 12);
-          break;
-        case Timescale.OneYear:
-          months = monthsToShow(12);
-          break;
-        case Timescale.SixMonths:
-          months = monthsToShow(6);
-          break;
-        case Timescale.ThreeMonths:
-          months = monthsToShow(3);
-          break;
-        // not supportin 1 month yet as we'd need to switch to transaction data instead of monthly balance data
-        default:
-          months = monthsToShow(12); // Default to 12 months if not specified
+
+      if (props.timescale === Timescale.All) {
+        months = Array.from(balancesMap.keys());
+      } else {
+        months = monthsToShow(props.timescale);
       }
 
       // Create the data array with null for missing months

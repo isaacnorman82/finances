@@ -92,12 +92,13 @@ export interface AccountSummary {
 }
 
 export enum Timescale {
-  All = "All",
-  FiveYears = "5Y",
-  OneYear = "1Y",
-  SixMonths = "6M",
-  ThreeMonths = "3M",
-  OneMonth = "1M",
+  All = 0,
+  FiveYears = 60,
+  TwoYears = 24,
+  OneYear = 12,
+  SixMonths = 6,
+  ThreeMonths = 3,
+  OneMonth = 1,
 }
 
 export enum MonthChangeAction {

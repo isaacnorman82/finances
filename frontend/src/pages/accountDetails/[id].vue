@@ -25,7 +25,14 @@
                 {{ accountSummary.account.institution }}
                 {{ accountSummary.account.name }}
               </div>
-              <div class="mb-4 subheading-text">1234-5678-9012-3456</div>
+              <div class="d-flex mb-4">
+                <div class="subheading-text">1234-5678-9012-3456</div>
+                <v-spacer />
+                <div class="subheading-text">
+                  {{ startMonth ? format(startMonth, "MMM yyyy") : "" }}
+                </div>
+              </div>
+
               <div class="text-caption">Account notes go here.</div>
             </div>
           </v-card-text>
@@ -55,6 +62,16 @@
                 {{
                   formatLastTransactionDate(accountSummary.lastTransactionDate)
                 }}
+              </div>
+              <div
+                v-for="item in balanceDeltas"
+                :key="item.title"
+                class="headed-data-row"
+              >
+                <div class="data-row-header">{{ item.title }}</div>
+                <div>
+                  {{ calculateBalanceChange(item.timescale, accountSummary) }}
+                </div>
               </div>
             </div>
           </v-card-text>
@@ -88,10 +105,12 @@
               v-model="graphTimescale"
               color="primary"
               density="compact"
+              mandatory
               variant="plain"
             >
               <v-btn text="6M" :value="Timescale.SixMonths" />
               <v-btn text="1Y" :value="Timescale.OneYear" />
+              <v-btn text="2Y" :value="Timescale.TwoYears" />
               <v-btn text="5Y" :value="Timescale.FiveYears" />
               <v-btn text="ALL" :value="Timescale.All" />
             </v-btn-toggle>
@@ -179,11 +198,12 @@
   import type { AccountSummary, Transaction } from "@/types.d";
   import { MonthChangeAction, Timescale } from "@/types.d";
   import {
+    calculateBalanceChange,
     formatBalance,
     formatDate,
     formatLastTransactionDate,
   } from "@/utils";
-  import { addMonths, startOfMonth } from "date-fns";
+  import { addMonths, format, startOfMonth } from "date-fns";
   import { useRoute } from "vue-router";
   import { useDate } from "vuetify";
 
@@ -236,19 +256,33 @@
   const transactionsStore = useTransactions();
   const transactions = ref<Transaction[]>([]);
 
-  const atStart = computed(() => {
-    if (!accountSummary.value) return true;
+  const startMonth = computed(() => {
+    if (!accountSummary.value) return null;
     const startYearMonth = accountSummary.value.monthlyBalances.startYearMonth;
-    const startDate = new Date(`${startYearMonth}-01T00:00:00`);
-    return selectedDate.value <= startOfMonth(startDate);
+    return new Date(`${startYearMonth}-01T00:00:00`);
+  });
+
+  const endMonth = computed(() => {
+    if (!accountSummary.value) return null;
+    const endYearMonth = accountSummary.value.monthlyBalances.endYearMonth;
+    return new Date(`${endYearMonth}-01T00:00:00`);
+  });
+
+  const atStart = computed(() => {
+    if (!startMonth.value) return true;
+    return selectedDate.value <= startOfMonth(startMonth.value);
   });
 
   const atEnd = computed(() => {
-    if (!accountSummary.value) return true;
-    const endYearMonth = accountSummary.value.monthlyBalances.endYearMonth;
-    const endDate = new Date(`${endYearMonth}-01T00:00:00`);
-    return selectedDate.value >= startOfMonth(endDate);
+    if (!endMonth.value) return true;
+    return selectedDate.value >= startOfMonth(endMonth.value);
   });
+
+  const balanceDeltas = ref([
+    { title: "1 Month:", timescale: Timescale.OneMonth },
+    { title: "3 Months:", timescale: Timescale.ThreeMonths },
+    { title: "1 Year:", timescale: Timescale.OneYear },
+  ]);
 
   watch(
     [selectedDate],
@@ -320,5 +354,15 @@
 <style scoped>
   .title-width {
     width: 185px; /* Adjust the width as needed */
+  }
+
+  .headed-data-row {
+    display: table-row;
+  }
+  .headed-data-row div {
+    display: table-cell;
+  }
+  .data-row-header {
+    padding-right: 8px;
   }
 </style>
