@@ -22,3 +22,15 @@ export function formatDate(dateTime: string): string {
 
   return `${day}/${month}/${year}`;
 }
+
+export const formatLastTransactionDate = (dateTime: string | null) => {
+  if (!dateTime) return "N/A";
+
+  // Parse the date
+  const date = new Date(dateTime);
+  const now = new Date();
+  const diffTime = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  return `${formatDate(dateTime)} (${diffDays} days ago)`;
+};

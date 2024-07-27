@@ -1,5 +1,5 @@
 <template>
-  <v-container style="height: 100vh; width: 100%">
+  <v-container style="width: 100%">
     <v-row>
       <v-col>
         <v-breadcrumbs bg-color="primary" :items="[]">
@@ -40,7 +40,7 @@
   import StackedBarChart from "@/components/StackedBarChart.vue";
   import { useAccountSummaries } from "@/stores/accountSummaries";
   import type { AccountSummary } from "@/types.d.ts";
-  import { formatBalance, formatDate } from "@/utils";
+  import { formatBalance, formatLastTransactionDate } from "@/utils";
   import { ChartData } from "chart.js";
   import { computed, ref } from "vue";
 
@@ -72,18 +72,6 @@
       ),
     }));
   });
-
-  const formatLastTransactionDate = (dateTime: string | null) => {
-    if (!dateTime) return "N/A";
-
-    // Parse the date
-    const date = new Date(dateTime);
-    const now = new Date();
-    const diffTime = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-    return `${formatDate(dateTime)} (${diffDays} days ago)`;
-  };
 
   function navigateToAccount(item: any) {
     router.push({ path: `/accountDetails/${item.id}` });

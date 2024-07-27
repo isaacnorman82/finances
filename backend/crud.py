@@ -58,6 +58,8 @@ def get_transactions(
     if limit is not None:
         query = query.limit(limit)
 
+    query.order_by(db_models.Transaction.date_time.asc())
+
     results = query.all()
 
     return [api_models.Transaction.model_validate(result) for result in results]

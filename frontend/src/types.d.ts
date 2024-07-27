@@ -90,3 +90,19 @@ export interface AccountSummary {
   monthly_balances: MonthlyBalanceResult;
   last_transaction_date: string | null;
 }
+
+export enum Timescale {
+  All = "All",
+  FiveYears = "5Y",
+  OneYear = "1Y",
+  SixMonths = "6M",
+  ThreeMonths = "3M",
+  OneMonth = "1M",
+}
+
+export enum MonthChangeAction {
+  First = "first",
+  Last = "last",
+  Next = "next",
+  Prev = "prev",
+}

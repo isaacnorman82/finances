@@ -49,8 +49,8 @@
             display: false,
           },
           title: {
-            display: true,
-            text: "Stacked Bar Chart",
+            text: "",
+            display: false,
           },
           tooltip: {
             callbacks: {
