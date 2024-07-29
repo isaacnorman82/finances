@@ -73,8 +73,9 @@ export interface HTTPValidationError {
 
 export interface MonthlyBalance {
   yearMonth: string;
+  startBalance: string;
   monthlyBalance: string;
-  cumulativeBalance: string;
+  endBalance: string;
 }
 
 export interface MonthlyBalanceResult {

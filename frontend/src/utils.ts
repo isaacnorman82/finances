@@ -1,8 +1,9 @@
-import { AccountSummary, Timescale } from "@/types.d";
+import { AccountSummary, MonthlyBalance, Timescale } from "@/types.d";
 import { startOfMonth, subMonths } from "date-fns";
 
 export function formatBalance(balance: string | number): string {
   // console.log("Formatting balance", balance);
+  if (balance === undefined) return "Error";
   const numericBalance =
     typeof balance === "string" ? parseFloat(balance) : balance;
   const formattedBalance = `£${Math.abs(numericBalance).toFixed(2)}`;
@@ -65,12 +66,12 @@ export function calculateBalanceChange(
 
   const endDate = new Date(accountSummary.monthlyBalances.endYearMonth + "-01");
 
-  console.log(
-    "Calculating balance change for timescale, start, end",
-    timescale,
-    startDate,
-    endDate
-  );
+  // console.log(
+  //   "Calculating balance change for timescale, start, end",
+  //   timescale,
+  //   startDate,
+  //   endDate
+  // );
 
   // Find the closest balance entries for startDate and endDate
   const startBalanceEntry = monthlyBalances.find(
@@ -80,15 +81,15 @@ export function calculateBalanceChange(
     .filter((balance) => new Date(balance.yearMonth + "-01") <= endDate)
     .pop(); // Get the last entry before or equal to endDate
 
-  console.log("Found balance entries", startBalanceEntry, endBalanceEntry);
+  // console.log("Found balance entries", startBalanceEntry, endBalanceEntry);
 
   // Use the start balance entry or zero if not found and timescale is not All
   const startBalance =
     startBalanceEntry && timescale !== Timescale.All
-      ? parseFloat(startBalanceEntry.cumulativeBalance)
+      ? parseFloat(startBalanceEntry.endBalance)
       : 0;
   const endBalance = endBalanceEntry
-    ? parseFloat(endBalanceEntry.cumulativeBalance)
+    ? parseFloat(endBalanceEntry.endBalance)
     : parseFloat(accountSummary.balance);
 
   const balanceChange = endBalance - startBalance;
@@ -105,4 +106,18 @@ export function calculateBalanceChange(
   }
 
   return formattedChange;
+}
+
+export function getBalanceForDate(
+  accountSummary: AccountSummary,
+  date: Date
+): MonthlyBalance | null {
+  // console.log("Getting balance for date", date);
+  const yearMonth = date.toISOString().slice(0, 7);
+  // console.log("Getting balance for date", yearMonth);
+  return (
+    accountSummary?.monthlyBalances.monthlyBalances.find(
+      (mb) => mb.yearMonth === yearMonth
+    ) ?? null
+  );
 }

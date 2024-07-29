@@ -1,5 +1,5 @@
 <template>
-  <v-container v-if="accountSummary">
+  <v-container v-if="accountSummary && selectedMonthlyBalance">
     <v-row>
       <v-col>
         <v-breadcrumbs :items="breadcrumbs">
@@ -29,7 +29,7 @@
                 <div class="subheading-text">1234-5678-9012-3456</div>
                 <v-spacer />
                 <div class="subheading-text">
-                  {{ startMonth ? format(startMonth, "MMM yyyy") : "" }}
+                  {{ startMonth ? format(startMonth, "MMMM yyyy") : "" }}
                 </div>
               </div>
 
@@ -179,9 +179,23 @@
             <template v-slot:body.append>
               <tr>
                 <td colspan="3" style="text-align: right; font-weight: bold">
-                  Monthly Balance:
+                  <div>Starting Balance:</div>
+                  <div>Monthly Balance:</div>
+                  <div>Final Balance:</div>
                 </td>
-                <td v-html="formatBalance(totalBalance)" />
+                <td>
+                  <div
+                    v-html="formatBalance(selectedMonthlyBalance.startBalance)"
+                  />
+                  <div
+                    v-html="
+                      formatBalance(selectedMonthlyBalance.monthlyBalance)
+                    "
+                  />
+                  <div
+                    v-html="formatBalance(selectedMonthlyBalance.endBalance)"
+                  />
+                </td>
                 <td />
               </tr>
             </template>
@@ -202,6 +216,7 @@
     formatBalance,
     formatDate,
     formatLastTransactionDate,
+    getBalanceForDate,
   } from "@/utils";
   import { addMonths, format, startOfMonth } from "date-fns";
   import { useRoute } from "vue-router";
@@ -225,7 +240,9 @@
   const displayDate = computed<string>(() => {
     return date.format(selectedDate.value, "monthAndYear");
   });
-  const selectedDate = ref(startOfMonth(new Date()));
+  const selectedDate = ref(
+    new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1))
+  );
 
   const changeMonth = (action: MonthChangeAction) => {
     if (!accountSummary.value) return;
@@ -235,14 +252,10 @@
 
     switch (action) {
       case MonthChangeAction.First:
-        selectedDate.value = startOfMonth(
-          new Date(`${startYearMonth}-01T00:00:00`)
-        );
+        selectedDate.value = new Date(`${startYearMonth}-01T00:00:00Z`);
         break;
       case MonthChangeAction.Last:
-        selectedDate.value = startOfMonth(
-          new Date(`${endYearMonth}-01T00:00:00`)
-        );
+        selectedDate.value = new Date(`${endYearMonth}-01T00:00:00Z`);
         break;
       case MonthChangeAction.Next:
         selectedDate.value = addMonths(selectedDate.value, 1);
@@ -259,13 +272,13 @@
   const startMonth = computed(() => {
     if (!accountSummary.value) return null;
     const startYearMonth = accountSummary.value.monthlyBalances.startYearMonth;
-    return new Date(`${startYearMonth}-01T00:00:00`);
+    return new Date(`${startYearMonth}-01T00:00:00Z`);
   });
 
   const endMonth = computed(() => {
     if (!accountSummary.value) return null;
     const endYearMonth = accountSummary.value.monthlyBalances.endYearMonth;
-    return new Date(`${endYearMonth}-01T00:00:00`);
+    return new Date(`${endYearMonth}-01T00:00:00Z`);
   });
 
   const atStart = computed(() => {
@@ -294,7 +307,7 @@
       );
       transactions.value = await transactionsStore.fetchTransactions(
         accountId,
-        date.getMonth(selectedDate.value) + 1,
+        date.getMonth(selectedDate.value) + 1, // is this broken because of utc?
         date.getYear(selectedDate.value)
       );
       // console.log(transactions.value);
@@ -344,10 +357,15 @@
     ];
   });
 
-  const totalBalance = computed(() => {
-    return transactions.value.reduce((total, transaction) => {
-      return total + parseFloat(transaction.amount);
-    }, 0);
+  const selectedMonthlyBalance = computed(() => {
+    if (accountSummary.value) {
+      // console.log(
+      //   "updating selected monthly balance for date",
+      //   selectedDate.value
+      // );
+      return getBalanceForDate(accountSummary.value, selectedDate.value);
+    }
+    return null;
   });
 </script>
 

@@ -148,9 +148,7 @@
         const monthlyBalance = summary.monthlyBalances.monthlyBalances.find(
           (mb) => mb.yearMonth === label
         );
-        return monthlyBalance
-          ? parseFloat(monthlyBalance.cumulativeBalance)
-          : 0;
+        return monthlyBalance ? parseFloat(monthlyBalance.endBalance) : 0;
       });
 
       return {

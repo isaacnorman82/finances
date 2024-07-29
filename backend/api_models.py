@@ -92,8 +92,9 @@ class BalanceResult(BaseModel):
 
 class MonthlyBalance(BaseModel):
     year_month: str
+    start_balance: Decimal
     monthly_balance: Decimal
-    cumulative_balance: Decimal
+    end_balance: Decimal
 
 
 class MonthlyBalanceResult(BaseModel):
