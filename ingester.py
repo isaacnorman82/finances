@@ -4,7 +4,7 @@ from typing import Optional
 
 import httpx
 
-from app.api_models import Account, AccountCreate
+from backend.api_models import Account, AccountCreate
 
 
 def get_account_id(account: AccountCreate) -> Optional[Account]:

@@ -11,9 +11,10 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
-from backend.api_models import AcBehaviour, AcType, IngestType
+from backend.api_models import AcType, IngestType
 from backend.db import Base
 
 ReqCol = partial(Column, nullable=False)
@@ -27,7 +28,6 @@ class Account(Base):
     # required fields
     name = ReqCol(String, index=True)
     account_type = ReqCol(Enum(AcType), index=True)
-    account_behaviour = ReqCol(Enum(AcBehaviour), index=True)
     institution = ReqCol(String, index=True)
     is_active = ReqCol(Boolean, default=True)
     default_ingest_type: IngestType = ReqCol(Enum(IngestType))
@@ -37,6 +37,7 @@ class Account(Base):
 
     # relationships
     transactions = relationship("Transaction", back_populates="account")
+    transaction_rules = relationship("TransactionRules", back_populates="account")
 
     # Define a composite unique constraint
     __table_args__ = (UniqueConstraint("institution", "name", name="unique_institution_name"),)
@@ -60,6 +61,22 @@ class Transaction(Base):
 
     # relationships
     account = relationship("Account", back_populates="transactions")
+
+
+class TransactionRules(Base):
+    __tablename__ = "transaction_rules"
+    id = Column(Integer, primary_key=True)
+
+    # required fields
+    account_id = ReqCol(Integer, ForeignKey("accounts.id"))
+    read_col = ReqCol(String)
+    write_col = ReqCol(String)
+    condition = ReqCol(JSONB)
+    match_value = ReqCol(String)
+    no_match_value = ReqCol(String)
+
+    # relationships
+    account = relationship("Account", back_populates="transaction_rules")
 
 
 # todo will need tags on transactions

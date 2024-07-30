@@ -12,7 +12,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from backend import __version__, db_models
-from backend.db import create_account_summary_view, engine
+from backend.db import engine
 from backend.rest_api import get_api_router
 
 logging.basicConfig(
@@ -21,12 +21,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 logging.getLogger("ofxtools").setLevel(logging.ERROR)
 
-db_models.Base.metadata.create_all(bind=engine)
-# create_account_summary_view(engine)
-
-# @asynccontextmanager
-# async def lifespan(app: FastAPI):
-#     pass
+# create everything if not using alembic
+# db_models.Base.metadata.create_all(bind=engine)
 
 
 def _configure_app() -> FastAPI:

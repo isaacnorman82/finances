@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal
 from enum import StrEnum, auto
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from fastapi import HTTPException, status
 from pydantic import BaseModel, ConfigDict, field_validator
@@ -26,11 +26,6 @@ class AcType(StrEnum):
     stockbroker = auto()
 
 
-class AcBehaviour(StrEnum):
-    standard = auto()
-    crowd_property = auto()
-
-
 class IngestType(StrEnum):
     crowd_property_csv = auto()
     csv = auto()
@@ -38,11 +33,15 @@ class IngestType(StrEnum):
     ofx_transactions = auto()
 
 
+class RuleConditionID(StrEnum):
+    base = auto()
+    contains_any = auto()
+
+
 class AccountCreate(BaseModel):
     institution: str
     name: str
     account_type: AcType
-    account_behaviour: AcBehaviour = AcBehaviour.standard
     default_ingest_type: IngestType = IngestType.csv
     is_active: bool = True
     # transactions: List[Transaction]  - could add this in but need to understand what triggers population (i.e. avoid always fetching all)
@@ -52,6 +51,25 @@ class AccountCreate(BaseModel):
 class Account(AccountCreate):
     model_config = _orm_config
     id: int
+
+
+class RuleCondition(BaseModel):
+    type_id: RuleConditionID = RuleConditionID.base
+    pass
+
+
+class ContainsAny(RuleCondition):
+    type_id: RuleConditionID = RuleConditionID.contains_any
+    values: List[str]
+
+
+class TransactionRule(BaseModel):
+    account_id: int
+    read_col: str
+    write_col: str
+    condition: RuleCondition
+    match_value: str
+    no_match_value: str
 
 
 class TransactionCreate(BaseModel):
