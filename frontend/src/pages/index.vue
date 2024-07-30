@@ -42,7 +42,10 @@
     </v-row>
     <v-row>
       <v-col>
-        <StackedBarChart :data="chartData" />
+        <StackedBarChart
+          :data="chartData"
+          @chartClick="navigateToAccountDetails"
+        />
       </v-col>
     </v-row>
   </v-container>
@@ -52,7 +55,11 @@
   import StackedBarChart from "@/components/StackedBarChart.vue";
   import { useAccountSummaries } from "@/stores/accountSummaries";
   import type { AccountSummary } from "@/types.d.ts";
-  import { formatBalance, formatLastTransactionDate } from "@/utils";
+  import {
+    findAccountSummaryFromLabel,
+    formatBalance,
+    formatLastTransactionDate,
+  } from "@/utils";
   import { ChartData } from "chart.js";
   import { computed, ref } from "vue";
 
@@ -93,6 +100,23 @@
       ),
     }));
   });
+
+  const navigateToAccountDetails = ({
+    account,
+    date,
+  }: {
+    account: string;
+    date: string;
+  }) => {
+    const accountSummary = findAccountSummaryFromLabel(
+      account,
+      accountSummaries.value
+    );
+    if (accountSummary) {
+      const accountId = accountSummary.account.id;
+      router.push({ path: `/accountDetails/${accountId}`, query: { date } });
+    }
+  };
 
   function navigateToAccount(item: any) {
     router.push({ path: `/accountDetails/${item.id}` });

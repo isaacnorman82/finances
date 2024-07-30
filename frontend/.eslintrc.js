@@ -1,22 +1,24 @@
-/**
- * .eslint.js
- *
- * ESLint configuration file.
- */
-
-// const { queryObjects } = require("v8");
-
 module.exports = {
   root: true,
   env: {
     node: true,
+    browser: true,
+    es2021: true,
   },
   extends: [
-    "vuetify",
-    "@vue/eslint-config-typescript",
-    "./.eslintrc-auto-import.json",
+    "eslint:recommended",
+    "plugin:vue/vue3-recommended",
+    "@vue/eslint-config-typescript/recommended",
+    "plugin:prettier/recommended",
   ],
+  parserOptions: {
+    ecmaVersion: 2020,
+    parser: "@typescript-eslint/parser",
+    sourceType: "module",
+  },
+  plugins: ["vue", "@typescript-eslint", "prettier"],
   rules: {
+    "prettier/prettier": "error",
     "vue/multi-word-component-names": "off",
     "vue/v-slot-style": "off",
     "space-before-function-paren": [
@@ -27,7 +29,7 @@ module.exports = {
         asyncArrow: "always",
       },
     ],
-    quotes: ["error", "double"],
+    quotes: ["error", "single"],
     semi: ["error", "always"],
     "arrow-parens": ["error", "always"],
   },

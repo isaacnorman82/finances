@@ -1,4 +1,5 @@
-import { AccountSummary, MonthlyBalance, Timescale } from "@/types.d";
+import type { AccountSummary, MonthlyBalance } from "@/types.d";
+import { MonthYear, Timescale } from "@/types.d";
 import { startOfMonth, subMonths } from "date-fns";
 
 export function formatBalance(balance: string | number): string {
@@ -110,14 +111,27 @@ export function calculateBalanceChange(
 
 export function getBalanceForDate(
   accountSummary: AccountSummary,
-  date: Date
+  date: MonthYear
 ): MonthlyBalance | null {
-  // console.log("Getting balance for date", date);
-  const yearMonth = date.toISOString().slice(0, 7);
-  // console.log("Getting balance for date", yearMonth);
+  // Example function implementation
+  const yearMonth = `${date.year}-${date.month.toString().padStart(2, "0")}`;
   return (
-    accountSummary?.monthlyBalances.monthlyBalances.find(
-      (mb) => mb.yearMonth === yearMonth
+    accountSummary.monthlyBalances.monthlyBalances.find(
+      (balance: MonthlyBalance) => balance.yearMonth === yearMonth
+    ) || null
+  );
+}
+
+export function findAccountSummaryFromLabel(
+  accountString: string,
+  summaries: AccountSummary[]
+): AccountSummary | null {
+  const [institution, name] = accountString.split(" - ");
+  return (
+    summaries.find(
+      (summary) =>
+        summary.account.institution === institution &&
+        summary.account.name === name
     ) ?? null
   );
 }

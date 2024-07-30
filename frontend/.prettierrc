@@ -1,4 +1,3 @@
 {
-  "vueIndentScriptAndStyle": true,
-  "arrow-spacing": false
+  "vueIndentScriptAndStyle": true
 }

@@ -3,11 +3,13 @@
   <div v-else>Loading...</div>
 </template>
 
-<script lang="ts">
+<script setup lang="ts">
   import {
+    ActiveElement,
     BarElement,
     CategoryScale,
     ChartData,
+    ChartEvent,
     Chart as ChartJS,
     ChartOptions,
     Legend,
@@ -15,10 +17,9 @@
     Title,
     Tooltip,
   } from "chart.js";
-  import { defineComponent, PropType } from "vue";
+  import { defineProps } from "vue";
   import { Bar } from "vue-chartjs";
 
-  // Register required components
   ChartJS.register(
     CategoryScale,
     LinearScale,
@@ -28,82 +29,97 @@
     Legend
   );
 
-  export default defineComponent({
-    name: "StackedBarChart",
-    components: {
-      Bar,
-    },
-    props: {
-      data: {
-        type: Object as PropType<ChartData<"bar">>,
-        required: true,
+  defineProps<{
+    data: ChartData<"bar">;
+  }>();
+
+  const emit = defineEmits<{
+    (e: "chartClick", payload: { account: string; date: string }): void;
+  }>();
+
+  const handleChartClick = (
+    event: ChartEvent,
+    elements: ActiveElement[],
+    chart: ChartJS<"bar">
+  ) => {
+    if (elements.length && chart.data.labels) {
+      const elementIndex = elements[0].index;
+      const datasetIndex = elements[0].datasetIndex;
+      const dataset = chart.data.datasets[datasetIndex];
+      const account = dataset.label;
+      const date = chart.data.labels[elementIndex];
+
+      // Ensure the date is a string
+      const dateString = typeof date === "string" ? date : String(date);
+
+      console.log("chartClick", { account, date: dateString });
+      if (account && dateString) {
+        emit("chartClick", { account, date: dateString });
+      }
+    }
+  };
+
+  const chartOptions: ChartOptions<"bar"> = {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: {
+      legend: {
+        position: "bottom",
+        display: false,
+      },
+      title: {
+        text: "",
+        display: false,
+      },
+      tooltip: {
+        callbacks: {
+          label: (context) => {
+            let label = context.dataset.label || "";
+            if (label) {
+              label += ": ";
+            }
+            if (context.parsed.y !== null) {
+              const value = context.parsed.y as number;
+              label += `${value < 0 ? "-" : ""}£${Math.abs(
+                value
+              ).toLocaleString()}`;
+            }
+            return label;
+          },
+        },
       },
     },
-    setup() {
-      const chartOptions: ChartOptions<"bar"> = {
-        responsive: true,
-        maintainAspectRatio: true,
-        plugins: {
-          legend: {
-            position: "bottom",
-            display: false,
+    scales: {
+      x: {
+        stacked: true,
+      },
+      y: {
+        stacked: true,
+        ticks: {
+          callback: (value) => {
+            const val = value as number;
+            return `£${Math.abs(val).toLocaleString()}`;
           },
-          title: {
-            text: "",
-            display: false,
-          },
-          tooltip: {
-            callbacks: {
-              label: (context) => {
-                let label = context.dataset.label || "";
-                if (label) {
-                  label += ": ";
-                }
-                if (context.parsed.y !== null) {
-                  const value = context.parsed.y as number;
-                  label += `${value < 0 ? "-" : ""}£${Math.abs(
-                    value
-                  ).toLocaleString()}`;
-                }
-                return label;
-              },
-            },
+          color(context) {
+            const value = context.tick.value;
+            return value < 0 ? "red" : "black";
           },
         },
-        scales: {
-          x: {
-            stacked: true,
-          },
-          y: {
-            stacked: true,
-            ticks: {
-              callback: (value) => {
-                const val = value as number;
-                return `£${Math.abs(val).toLocaleString()}`;
-              },
-              color(context) {
-                const value = context.tick.value;
-                return value < 0 ? "red" : "black";
-              },
-            },
-          },
-        },
-      };
-
-      return {
-        chartOptions,
-      };
+      },
     },
-  });
+    onClick: (
+      event: ChartEvent,
+      elements: ActiveElement[],
+      chart: ChartJS<"bar">
+    ) => {
+      handleChartClick(event, elements, chart);
+    },
+  };
 </script>
 
 <style scoped>
   .chart-container {
-    /* width: 100%;
-    height: auto; Ensure the container height adjusts automatically */
     position: relative;
-    /* height: 40vh; */
-    /* width: 80vw; */
     flex-grow: 1 1 auto;
   }
 </style>

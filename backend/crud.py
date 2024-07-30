@@ -125,15 +125,8 @@ def get_first_day_of_next_month(date: datetime) -> datetime:
 
 
 def get_monthly_balances(
-    db_session: Session,
-    account_ids: Optional[List[int]] = None,
-    start_date: Optional[datetime] = None,
-    end_date: Optional[datetime] = None,
+    db_session: Session, account_ids: Optional[List[int]] = None
 ) -> List[api_models.MonthlyBalanceResult]:
-
-    if end_date:
-        end_date = get_first_day_of_next_month(end_date)
-        logger.info(f"end_date: {end_date}")
 
     # Build the base query for monthly balances and cumulative balance
     base_query = db_session.query(
@@ -154,17 +147,6 @@ def get_monthly_balances(
     if account_ids is not None:
         base_query = base_query.filter(db_models.Transaction.account_id.in_(account_ids))
 
-    if start_date is not None:
-        base_query = base_query.filter(db_models.Transaction.date_time >= start_date)
-
-    if end_date is not None:
-        base_query = base_query.filter(db_models.Transaction.date_time < end_date)
-
-    # Print the SQL for the base query
-    logger.info(
-        f"Base Query SQL: {str(base_query.statement.compile(compile_kwargs={'literal_binds': True}))}"
-    )
-
     # Execute the query
     monthly_balance_query = base_query.all()
 
@@ -175,19 +157,7 @@ def get_monthly_balances(
         year_month_str = row.month.strftime("%Y-%m")
 
         if account_id not in results:
-            # For the first month, we assume start_balance is 0 or can be fetched from the cumulative balance query prior to the start date
             start_balance = Decimal(0)
-            if start_date is not None:
-                cumulative_balance_prior = db_session.query(
-                    func.sum(db_models.Transaction.amount)
-                ).filter(
-                    db_models.Transaction.account_id == account_id,
-                    db_models.Transaction.date_time < start_date,
-                ).scalar() or Decimal(
-                    0
-                )
-                start_balance = cumulative_balance_prior
-
             results[account_id] = api_models.MonthlyBalanceResult(
                 account_id=account_id,
                 monthly_balances=[],
@@ -211,4 +181,33 @@ def get_monthly_balances(
 
         results[account_id].monthly_balances.append(monthly_balance_obj)
 
+    # Fill in the missing months with zero balances for each account
+    for account_id, result in results.items():
+        fill_missing_months(result.monthly_balances)
+
     return list(results.values())
+
+
+def fill_missing_months(
+    monthly_balances: List[api_models.MonthlyBalance],
+) -> List[api_models.MonthlyBalance]:
+    if not monthly_balances:
+        return monthly_balances
+
+    year, month = map(int, monthly_balances[0].year_month.split("-"))
+
+    for i in range(1, len(monthly_balances) - 1):
+        month = (month % 12) + 1
+        if month == 1:
+            year += 1
+
+        if monthly_balances[i].year_month != f"{year:04d}-{month:02d}":
+            monthly_balances.insert(
+                i,
+                api_models.MonthlyBalance(
+                    year_month=f"{year:04d}-{month:02d}",
+                    start_balance=monthly_balances[i - 1].end_balance,
+                    monthly_balance=Decimal(0),
+                    end_balance=monthly_balances[i - 1].end_balance,
+                ),
+            )

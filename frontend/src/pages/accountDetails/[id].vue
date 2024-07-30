@@ -29,7 +29,7 @@
                 <div class="subheading-text">1234-5678-9012-3456</div>
                 <v-spacer />
                 <div class="subheading-text">
-                  {{ startMonth ? format(startMonth, "MMMM yyyy") : "" }}
+                  {{ startMonth ? startMonth.format("mmmm yyyy") : "" }}
                 </div>
               </div>
 
@@ -127,7 +127,7 @@
         <v-card flat title="Transactions">
           <v-toolbar color="white" density="compact">
             <v-card-title class="title-width">
-              {{ displayDate }}
+              {{ selectedDate.format("mmmm yyyy") }}
             </v-card-title>
             <v-text-field
               v-model="search"
@@ -139,24 +139,24 @@
               variant="outlined"
             />
             <v-btn
-              :disabled="atStart"
+              :disabled="selectedDate.atStart"
               icon="mdi-page-first"
-              @click="changeMonth(MonthChangeAction.First)"
+              @click="selectedDate.toStart()"
             />
             <v-btn
-              :disabled="atStart"
+              :disabled="selectedDate.atStart"
               icon="mdi-chevron-left"
-              @click="changeMonth(MonthChangeAction.Prev)"
+              @click="selectedDate.subtract(1)"
             />
             <v-btn
-              :disabled="atEnd"
+              :disabled="selectedDate.atEnd"
               icon="mdi-chevron-right"
-              @click="changeMonth(MonthChangeAction.Next)"
+              @click="selectedDate.add(1)"
             />
             <v-btn
-              :disabled="atEnd"
+              :disabled="selectedDate.atEnd"
               icon="mdi-page-last"
-              @click="changeMonth(MonthChangeAction.Last)"
+              @click="selectedDate.toEnd()"
             />
           </v-toolbar>
           <v-data-table
@@ -210,7 +210,7 @@
   import { useAccountSummaries } from "@/stores/accountSummaries";
   import { useTransactions } from "@/stores/transactions";
   import type { AccountSummary, Transaction } from "@/types.d";
-  import { MonthChangeAction, Timescale } from "@/types.d";
+  import { MonthYear, Timescale } from "@/types.d";
   import {
     calculateBalanceChange,
     formatBalance,
@@ -218,9 +218,7 @@
     formatLastTransactionDate,
     getBalanceForDate,
   } from "@/utils";
-  import { addMonths, format, startOfMonth } from "date-fns";
   import { useRoute } from "vue-router";
-  import { useDate } from "vuetify";
 
   const graphTimescale = ref<Timescale>(Timescale.OneYear);
   const search = ref("");
@@ -235,60 +233,82 @@
     );
   });
 
-  const date = useDate();
-
-  const displayDate = computed<string>(() => {
-    return date.format(selectedDate.value, "monthAndYear");
-  });
-  const selectedDate = ref(
-    new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1))
-  );
-
-  const changeMonth = (action: MonthChangeAction) => {
-    if (!accountSummary.value) return;
-
-    const { startYearMonth, endYearMonth } =
-      accountSummary.value.monthlyBalances;
-
-    switch (action) {
-      case MonthChangeAction.First:
-        selectedDate.value = new Date(`${startYearMonth}-01T00:00:00Z`);
-        break;
-      case MonthChangeAction.Last:
-        selectedDate.value = new Date(`${endYearMonth}-01T00:00:00Z`);
-        break;
-      case MonthChangeAction.Next:
-        selectedDate.value = addMonths(selectedDate.value, 1);
-        break;
-      case MonthChangeAction.Prev:
-        selectedDate.value = addMonths(selectedDate.value, -1);
-        break;
-    }
-  };
+  console.log("hello");
 
   const transactionsStore = useTransactions();
   const transactions = ref<Transaction[]>([]);
 
+  const selectedDate = ref<MonthYear>(new MonthYear());
+
+  watch(
+    accountSummary,
+    () => {
+      let val: MonthYear;
+      if (route.query.date) {
+        val = new MonthYear(`${route.query.date}`);
+      } else {
+        val = new MonthYear();
+      }
+      if (accountSummary.value) {
+        //todo should maybe have an error if not
+        val.setBounds(
+          accountSummary.value.monthlyBalances.startYearMonth,
+          accountSummary.value.monthlyBalances.endYearMonth
+        );
+      }
+      // console.log("selectedDate", val);
+      selectedDate.value = val;
+    },
+    { immediate: true }
+  );
+
+  const selectedYearMonth = computed(() => ({
+    year: selectedDate.value.year,
+    month: selectedDate.value.month,
+  }));
+
+  watch(
+    selectedYearMonth,
+    async () => {
+      // Ensure bounds still set
+      if (accountSummary.value) {
+        selectedDate.value.setBounds(
+          accountSummary.value.monthlyBalances.startYearMonth,
+          accountSummary.value.monthlyBalances.endYearMonth
+        );
+      }
+      transactions.value = await transactionsStore.fetchTransactions(
+        accountId,
+        selectedDate.value
+      );
+    },
+    { immediate: true }
+  );
+
+  // watch(
+  //   selectedDate,
+  //   async () => {
+  //     // ensure bounds still set
+  //     if (accountSummary.value) {
+  //       //todo should maybe have an error if not
+  //       selectedDate.value.setBounds(
+  //         accountSummary.value.monthlyBalances.startYearMonth,
+  //         accountSummary.value.monthlyBalances.endYearMonth
+  //       );
+  //     }
+  //     transactions.value = await transactionsStore.fetchTransactions(
+  //       accountId,
+  //       selectedDate.value
+  //     );
+  //   },
+  //   { immediate: true, deep: true }
+  // );
+
   const startMonth = computed(() => {
     if (!accountSummary.value) return null;
     const startYearMonth = accountSummary.value.monthlyBalances.startYearMonth;
-    return new Date(`${startYearMonth}-01T00:00:00Z`);
-  });
-
-  const endMonth = computed(() => {
-    if (!accountSummary.value) return null;
-    const endYearMonth = accountSummary.value.monthlyBalances.endYearMonth;
-    return new Date(`${endYearMonth}-01T00:00:00Z`);
-  });
-
-  const atStart = computed(() => {
-    if (!startMonth.value) return true;
-    return selectedDate.value <= startOfMonth(startMonth.value);
-  });
-
-  const atEnd = computed(() => {
-    if (!endMonth.value) return true;
-    return selectedDate.value >= startOfMonth(endMonth.value);
+    // return new Date(`${startYearMonth}-01T00:00:00Z`);
+    return new MonthYear(startYearMonth);
   });
 
   const balanceDeltas = ref([
@@ -296,24 +316,6 @@
     { title: "3 Months:", timescale: Timescale.ThreeMonths },
     { title: "1 Year:", timescale: Timescale.OneYear },
   ]);
-
-  watch(
-    [selectedDate],
-    async () => {
-      console.log(
-        "Fetching transactions for account",
-        accountId,
-        selectedDate.value
-      );
-      transactions.value = await transactionsStore.fetchTransactions(
-        accountId,
-        date.getMonth(selectedDate.value) + 1, // is this broken because of utc?
-        date.getYear(selectedDate.value)
-      );
-      // console.log(transactions.value);
-    },
-    { immediate: true }
-  );
 
   const breadcrumbs = computed(() => {
     return [

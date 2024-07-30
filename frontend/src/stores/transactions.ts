@@ -1,7 +1,8 @@
 import { getTransactionsForAccount } from "@/services/apiService";
-import type { Transaction } from "@/types.d.ts";
+import type { MonthYear, Transaction } from "@/types.d.ts";
 import { defineStore } from "pinia";
 
+// todo make this part of MonthYear type
 function getMonthStartEnd(
   month: number,
   year: number
@@ -28,15 +29,25 @@ export const useTransactions = defineStore("transactions", {
   actions: {
     async fetchTransactions(
       accountId: number,
-      month: number,
-      year: number
+      selectedDate: MonthYear
     ): Promise<Transaction[]> {
-      const { startDate, endDate } = getMonthStartEnd(month, year);
-      const cacheKey = `${accountId}-${startDate}`;
+      const { startDate, endDate } = getMonthStartEnd(
+        selectedDate.month,
+        selectedDate.year
+      );
+      const cacheKey = `${accountId}-${selectedDate}`;
+      // console.log("cacheKey", cacheKey);
 
       // console.log("Fetching transactions", accountId, startDate, endDate);
       if (!this.transactionsCache[cacheKey]) {
-        console.log("Loading transactions for:", accountId, month, year);
+        console.log(
+          "Cache Miss - Loading transactions for account ID",
+          accountId,
+          "from",
+          startDate,
+          "to",
+          endDate
+        );
         const transactions = await getTransactionsForAccount(
           accountId,
           startDate,

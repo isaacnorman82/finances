@@ -1,6 +1,6 @@
 <template>
   <Line
-    v-if="chartData.datasets[0].data.length"
+    v-if="chartData.labels.length"
     :data="chartData"
     :options="chartOptions"
   />
@@ -8,7 +8,7 @@
 
 <script setup lang="ts">
   import type { AccountSummary, MonthlyBalance } from "@/types.d";
-  import { Timescale } from "@/types.d";
+  import { MonthYear, Timescale } from "@/types.d";
   import {
     ActiveElement,
     CategoryScale,
@@ -39,7 +39,7 @@
 
   interface Props {
     accountSummary: AccountSummary;
-    selectedDate: Date;
+    selectedDate: MonthYear;
     timescale: Timescale;
   }
 
@@ -52,9 +52,8 @@
         throw new Error("Account summary is required");
       }
 
-      const selectedDate = new Date(props.selectedDate);
-      selectedDate.setMonth(selectedDate.getMonth() + 1);
-      selectedDate.setDate(0); // Ensure it's the last day of the month
+      console.log("props.selectedDate", props.selectedDate);
+      const months = props.selectedDate.getMonthsForTimescale(props.timescale);
 
       // Extract cumulative balances
       const balancesMap = new Map(
@@ -62,25 +61,6 @@
           (mb: MonthlyBalance) => [mb.yearMonth, parseFloat(mb.endBalance)]
         )
       );
-
-      // Determine the range of months to display based on timescale
-      const monthsToShow = (numMonths: number) => {
-        const months = [];
-        for (let i = 0; i < numMonths; i++) {
-          const date = new Date(selectedDate);
-          date.setMonth(selectedDate.getMonth() - i);
-          months.push(date.toISOString().slice(0, 7));
-        }
-        return months.reverse(); // Ensure the months are in chronological order
-      };
-
-      let months: string[];
-
-      if (props.timescale === Timescale.All) {
-        months = Array.from(balancesMap.keys());
-      } else {
-        months = monthsToShow(props.timescale);
-      }
 
       // Create the data array with null for missing months
       const data = months.map((month) => balancesMap.get(month) ?? null);
@@ -187,7 +167,7 @@
       const elementIndex = elements[0].index;
       const date = chart.data.labels[elementIndex];
       if (date) {
-        emit("dateSelected", new Date(`${date}-01T00:00:00`));
+        emit("dateSelected", new MonthYear(`${date}`));
       }
     }
   };
