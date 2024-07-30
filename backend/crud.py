@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import List, Optional
 
+from fastapi import HTTPException, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -40,7 +41,8 @@ def get_transactions(
     end_date: Optional[datetime] = None,
     skip: int = None,
     limit: int = None,
-) -> List[db_models.Transaction]:
+    as_db_model: bool = False,
+) -> List[db_models.Transaction] | List[api_models.Transaction]:
 
     query = db_session.query(db_models.Transaction).filter(
         db_models.Transaction.account_id == account_id
@@ -62,6 +64,8 @@ def get_transactions(
 
     results = query.all()
 
+    if as_db_model:
+        return results
     return [api_models.Transaction.model_validate(result) for result in results]
 
 
@@ -211,3 +215,69 @@ def fill_missing_months(
                     end_balance=monthly_balances[i - 1].end_balance,
                 ),
             )
+
+
+# todo split this file up
+
+
+def get_transaction_rule(id: int, db_session: Session) -> api_models.TransactionRule:
+    result = db_session.query(db_models.TransactionRule).get(id)
+
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Transaction Rule {id=} not found"
+        )
+
+    return api_models.TransactionRule.model_validate(result)
+
+
+def get_rules(
+    db_session: Session,
+    account_ids: Optional[List[int]] = None,
+    as_api_models: bool = True,
+) -> List[api_models.TransactionRule]:
+    query = db_session.query(db_models.TransactionRule)
+
+    if account_ids is not None:
+        query = query.filter(db_models.TransactionRule.account_id.in_(account_ids))
+
+    results = query.all()
+
+    if not results:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"No rules found for {account_ids=}"
+        )
+
+    if not as_api_models:
+        return results
+    return [api_models.TransactionRule.model_validate(result) for result in results]
+
+
+def run_rules(db_session: Session, account_ids: Optional[List[int]] = None):
+    rules: List[api_models.TransactionRule] = get_rules(
+        db_session=db_session,
+        account_ids=account_ids,
+        as_api_models=True,
+    )
+
+    try:
+        for rule in rules:
+            transactions: List[api_models.Transaction] = get_transactions(
+                db_session=db_session, account_id=rule.account_id
+            )
+
+            logger.info(
+                f"Running rule {id=}, condition type {rule.condition.__class__.__name__}"
+                f" on account_id={rule.account_id} for {len(transactions)} transactions"
+            )
+
+            for transaction in transactions:
+                rule.condition.evaluate(transaction)
+                db_session.merge(db_models.Transaction(**transaction.model_dump()))
+
+        db_session.commit()
+    except Exception as e:
+        db_session.rollback()
+        raise
+    finally:
+        db_session.close()

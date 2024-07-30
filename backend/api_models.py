@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import logging
+from abc import ABC, abstractmethod
 from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal
 from enum import StrEnum, auto
-from typing import List, Optional, Union
+from typing import List, Literal, Optional, Union
 
 from fastapi import HTTPException, status
 from pydantic import BaseModel, ConfigDict, field_validator
+
+logger = logging.getLogger(__name__)
 
 _orm_config = ConfigDict(from_attributes=True, extra="forbid")
 
@@ -33,9 +37,9 @@ class IngestType(StrEnum):
     ofx_transactions = auto()
 
 
-class RuleConditionID(StrEnum):
-    base = auto()
-    contains_any = auto()
+# class RuleConditionID(StrEnum):
+#     base = "base"
+#     contains_any = "contains_any"
 
 
 class AccountCreate(BaseModel):
@@ -44,7 +48,6 @@ class AccountCreate(BaseModel):
     account_type: AcType
     default_ingest_type: IngestType = IngestType.csv
     is_active: bool = True
-    # transactions: List[Transaction]  - could add this in but need to understand what triggers population (i.e. avoid always fetching all)
     description: Optional[str] = None
 
 
@@ -53,23 +56,41 @@ class Account(AccountCreate):
     id: int
 
 
-class RuleCondition(BaseModel):
-    type_id: RuleConditionID = RuleConditionID.base
-    pass
+class RuleCondition(BaseModel, ABC):
+    type_id: Literal["invalid"]
+
+    class Config:
+        use_enum_values = True
+        discriminator = "type_id"
+
+    @abstractmethod
+    def evaluate(self, transaction: Transaction) -> bool:
+        pass
 
 
-class ContainsAny(RuleCondition):
-    type_id: RuleConditionID = RuleConditionID.contains_any
+class IsValueAdjContainsAny(RuleCondition):
+    type_id: Literal["is_value_adj_contains_any"]
     values: List[str]
+    read_col: str = "description"
+
+    @field_validator("values", mode="before")
+    def values_to_lower(cls, value):
+        return [val.lower() for val in value]
+
+    def evaluate(self, transaction: Transaction):
+        input = getattr(transaction, self.read_col).lower()
+        transaction.is_value_adjustment = any(val in input for val in self.values)
+        # logger.info(f"{input=}, {transaction.is_value_adjustment=} {self.values=}")
 
 
-class TransactionRule(BaseModel):
+class TransactionRuleCreate(BaseModel):
     account_id: int
-    read_col: str
-    write_col: str
-    condition: RuleCondition
-    match_value: str
-    no_match_value: str
+    condition: Union[RuleCondition, IsValueAdjContainsAny]
+
+
+class TransactionRule(TransactionRuleCreate):
+    model_config = _orm_config
+    id: int
 
 
 class TransactionCreate(BaseModel):
@@ -80,6 +101,7 @@ class TransactionCreate(BaseModel):
     description: Optional[str] = None
     reference: Optional[str] = None
     notes: Optional[str] = None
+    is_value_adjustment: Optional[bool] = False
 
     @field_validator("amount", mode="before")
     def validate_and_round_amount(cls, value):
@@ -89,7 +111,6 @@ class TransactionCreate(BaseModel):
 class Transaction(TransactionCreate):
     model_config = _orm_config
     id: int
-    # account: Account - would adding this in be inefficient with lots of transactions?
 
 
 class IngestResult(BaseModel):

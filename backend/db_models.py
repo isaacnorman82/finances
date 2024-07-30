@@ -37,7 +37,7 @@ class Account(Base):
 
     # relationships
     transactions = relationship("Transaction", back_populates="account")
-    transaction_rules = relationship("TransactionRules", back_populates="account")
+    transaction_rules = relationship("TransactionRule", back_populates="account")
 
     # Define a composite unique constraint
     __table_args__ = (UniqueConstraint("institution", "name", name="unique_institution_name"),)
@@ -51,6 +51,7 @@ class Transaction(Base):
     account_id = ReqCol(Integer, ForeignKey("accounts.id"))
     date_time = ReqCol(DateTime, index=True)
     amount = ReqCol(DECIMAL(precision=10, scale=2))
+    is_value_adjustment = ReqCol(Boolean, default=False)
 
     # optional fields
     transaction_type = OptCol(String, index=True)
@@ -63,17 +64,13 @@ class Transaction(Base):
     account = relationship("Account", back_populates="transactions")
 
 
-class TransactionRules(Base):
-    __tablename__ = "transaction_rules"
+class TransactionRule(Base):
+    __tablename__ = "transaction_rule"
     id = Column(Integer, primary_key=True)
 
     # required fields
     account_id = ReqCol(Integer, ForeignKey("accounts.id"))
-    read_col = ReqCol(String)
-    write_col = ReqCol(String)
     condition = ReqCol(JSONB)
-    match_value = ReqCol(String)
-    no_match_value = ReqCol(String)
 
     # relationships
     account = relationship("Account", back_populates="transaction_rules")

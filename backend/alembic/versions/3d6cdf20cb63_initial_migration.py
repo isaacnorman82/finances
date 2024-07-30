@@ -1,8 +1,8 @@
 """Initial migration
 
-Revision ID: 290907f69a9a
+Revision ID: 3d6cdf20cb63
 Revises: 
-Create Date: 2024-07-30 17:27:30.092569
+Create Date: 2024-07-30 23:06:45.644941
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '290907f69a9a'
+revision: str = '3d6cdf20cb63'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -34,14 +34,10 @@ def upgrade() -> None:
     op.create_index(op.f('ix_accounts_account_type'), 'accounts', ['account_type'], unique=False)
     op.create_index(op.f('ix_accounts_institution'), 'accounts', ['institution'], unique=False)
     op.create_index(op.f('ix_accounts_name'), 'accounts', ['name'], unique=False)
-    op.create_table('transaction_rules',
+    op.create_table('transaction_rule',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('account_id', sa.Integer(), nullable=False),
-    sa.Column('read_col', sa.String(), nullable=False),
-    sa.Column('write_col', sa.String(), nullable=False),
     sa.Column('condition', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-    sa.Column('match_value', sa.String(), nullable=False),
-    sa.Column('no_match_value', sa.String(), nullable=False),
     sa.ForeignKeyConstraint(['account_id'], ['accounts.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -50,6 +46,7 @@ def upgrade() -> None:
     sa.Column('account_id', sa.Integer(), nullable=False),
     sa.Column('date_time', sa.DateTime(), nullable=False),
     sa.Column('amount', sa.DECIMAL(precision=10, scale=2), nullable=False),
+    sa.Column('is_value_adjustment', sa.Boolean(), nullable=False),
     sa.Column('transaction_type', sa.String(), nullable=True),
     sa.Column('description', sa.String(), nullable=True),
     sa.Column('reference', sa.String(), nullable=True),
@@ -73,7 +70,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_transactions_description'), table_name='transactions')
     op.drop_index(op.f('ix_transactions_date_time'), table_name='transactions')
     op.drop_table('transactions')
-    op.drop_table('transaction_rules')
+    op.drop_table('transaction_rule')
     op.drop_index(op.f('ix_accounts_name'), table_name='accounts')
     op.drop_index(op.f('ix_accounts_institution'), table_name='accounts')
     op.drop_index(op.f('ix_accounts_account_type'), table_name='accounts')
