@@ -36,17 +36,13 @@ export const useTransactions = defineStore("transactions", {
         selectedDate.year
       );
       const cacheKey = `${accountId}-${selectedDate}`;
-      // console.log("cacheKey", cacheKey);
 
-      // console.log("Fetching transactions", accountId, startDate, endDate);
       if (!this.transactionsCache[cacheKey]) {
         console.log(
           "Cache Miss - Loading transactions for account ID",
           accountId,
-          "from",
-          startDate,
-          "to",
-          endDate
+          "for",
+          selectedDate.toString()
         );
         const transactions = await getTransactionsForAccount(
           accountId,

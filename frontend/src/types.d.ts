@@ -78,6 +78,8 @@ export interface MonthlyBalance {
   startBalance: string;
   monthlyBalance: string;
   endBalance: string;
+  startValAdjBalance: string;
+  endValAdjBalance: string;
 }
 
 export interface MonthlyBalanceResult {

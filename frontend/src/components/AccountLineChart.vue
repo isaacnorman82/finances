@@ -46,63 +46,65 @@
   const props = defineProps<Props>();
   const emit = defineEmits(["dateSelected"]);
 
+  const parseBalance = (balance: string): number | null => {
+    const parsed = parseFloat(balance);
+    return isNaN(parsed) ? null : parsed;
+  };
+
   const chartData = computed(
     (): { labels: string[]; datasets: ChartDataset<"line">[] } => {
       if (!props.accountSummary) {
         throw new Error("Account summary is required");
       }
 
-      console.log("props.selectedDate", props.selectedDate);
       const months = props.selectedDate.getMonthsForTimescale(props.timescale);
 
       // Extract cumulative balances
       const balancesMap = new Map(
         props.accountSummary.monthlyBalances.monthlyBalances.map(
-          (mb: MonthlyBalance) => [mb.yearMonth, parseFloat(mb.endBalance)]
+          (mb: MonthlyBalance) => [mb.yearMonth, parseBalance(mb.endBalance)]
         )
       );
 
-      // Create the data array with null for missing months
-      const data = months.map((month) => balancesMap.get(month) ?? null);
+      // Extract value adjusted balances
+      const adjBalancesMap = new Map(
+        props.accountSummary.monthlyBalances.monthlyBalances.map(
+          (mb: MonthlyBalance) => [
+            mb.yearMonth,
+            parseBalance(mb.startValAdjBalance),
+          ]
+        )
+      );
+
+      // Create the data arrays with null for missing months
+      const balanceData = months.map((month) => balancesMap.get(month) ?? null);
+      const adjBalanceData = months.map((month) => {
+        const balance = balancesMap.get(month) ?? null;
+        const adjBalance = adjBalancesMap.get(month) ?? 0;
+        return balance !== null ? balance - adjBalance : null;
+      });
 
       return {
         labels: months,
         datasets: [
           {
-            label: "Balance",
-            data,
+            label: "Value",
+            data: balanceData,
             fill: false,
             spanGaps: false,
-            borderColor: (context) => {
-              const index = context.dataIndex;
-              const value = context.dataset.data[index];
-              if (typeof value === "number") {
-                return value >= 0
-                  ? "rgba(66, 185, 131, 1)"
-                  : "rgba(220, 20, 60, 1)";
-              }
-              return "#000"; // Default color if value is not a number
-            },
-            borderWidth: 3,
-            segment: {
-              borderColor: (ctx) => {
-                const y0 = ctx.p0.parsed.y;
-                const y1 = ctx.p1.parsed.y;
-                if (typeof y0 === "number" && typeof y1 === "number") {
-                  if (y0 >= 0 && y1 >= 0) {
-                    return "rgba(66, 185, 131, 1)";
-                  } else if (y0 < 0 && y1 < 0) {
-                    return "rgba(220, 20, 60, 1)";
-                  } else {
-                    return y0 >= 0
-                      ? "rgba(66, 185, 131, 1)"
-                      : "rgba(220, 20, 60, 1)";
-                  }
-                }
-                return "#000"; // Default color if values are not numbers
-              },
-            },
+            borderColor: "rgba(72, 168, 166, 1)",
           },
+          ...(JSON.stringify(balanceData) !== JSON.stringify(adjBalanceData)
+            ? [
+                {
+                  label: "Payments",
+                  data: adjBalanceData,
+                  fill: false,
+                  spanGaps: false,
+                  borderColor: "rgba(24, 102, 192, 1)",
+                },
+              ]
+            : []),
         ],
       };
     }

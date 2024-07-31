@@ -87,7 +87,7 @@
       <v-col cols="4">
         <v-card
           class="fill-height d-flex flex-column"
-          color="primary"
+          color="blue-grey-lighten-2"
           variant="tonal"
         >
           <v-card-item class="flex-grow-1">
@@ -120,14 +120,10 @@
     </v-row>
     <v-row>
       <v-col>
-        <!-- <v-card-text>
-            Account ID: {{ accountId }} {{ accountSummary.account }}
-            </v-card-text> -->
-
         <v-card flat title="Transactions">
           <v-toolbar color="white" density="compact">
             <v-card-title class="title-width">
-              {{ selectedDate.format("mmmm yyyy") }}
+              {{ selectedDate.format("MMMM yyyy") }}
             </v-card-title>
             <v-text-field
               v-model="search"
@@ -232,8 +228,6 @@
       (summary) => summary.account.id === accountId
     );
   });
-
-  console.log("hello");
 
   const transactionsStore = useTransactions();
   const transactions = ref<Transaction[]>([]);
@@ -362,8 +356,8 @@
   const selectedMonthlyBalance = computed(() => {
     if (accountSummary.value) {
       // console.log(
-      //   "updating selected monthly balance for date",
-      //   selectedDate.value
+      //   "trying to get balance for date",
+      //   selectedDate.value.toString()
       // );
       return getBalanceForDate(accountSummary.value, selectedDate.value);
     }

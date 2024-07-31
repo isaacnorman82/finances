@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import List, Optional
 
 from fastapi import HTTPException, status
-from sqlalchemy import func
+from sqlalchemy import func, text
 from sqlalchemy.orm import Session
 
 from backend import api_models, db_models
@@ -60,7 +60,9 @@ def get_transactions(
     if limit is not None:
         query = query.limit(limit)
 
-    query.order_by(db_models.Transaction.date_time.asc())
+    query = query.order_by(db_models.Transaction.date_time.asc())
+
+    logger.info(str(query.statement.compile(compile_kwargs={"literal_binds": True})))
 
     results = query.all()
 
@@ -132,36 +134,49 @@ def get_monthly_balances(
     db_session: Session, account_ids: Optional[List[int]] = None
 ) -> List[api_models.MonthlyBalanceResult]:
 
-    # Build the base query for monthly balances and cumulative balance
-    base_query = db_session.query(
-        db_models.Transaction.account_id,
-        func.date_trunc("month", db_models.Transaction.date_time).label("month"),
-        func.sum(db_models.Transaction.amount).label("monthly_balance"),
-        func.sum(func.sum(db_models.Transaction.amount))
-        .over(
-            partition_by=db_models.Transaction.account_id,
-            order_by=func.date_trunc("month", db_models.Transaction.date_time),
-        )
-        .label("cumulative_balance"),
-    ).group_by(
-        db_models.Transaction.account_id, func.date_trunc("month", db_models.Transaction.date_time)
-    )
+    # Prepare the SQL text query
+    sql_query = """
+        SELECT
+            account_id,
+            DATE_TRUNC('month', date_time) AS month,
+            SUM(amount) AS monthly_balance,
+            SUM(SUM(amount)) OVER (
+                PARTITION BY account_id
+                ORDER BY DATE_TRUNC('month', date_time)
+            ) AS cumulative_balance,
+            SUM(CASE WHEN is_value_adjustment THEN amount ELSE 0 END) AS monthly_val_adj_balance,
+            SUM(SUM(CASE WHEN is_value_adjustment THEN amount ELSE 0 END)) OVER (
+                PARTITION BY account_id
+                ORDER BY DATE_TRUNC('month', date_time)
+            ) AS cumulative_val_adj_balance
+        FROM transactions
+        {where_clause}
+        GROUP BY account_id, DATE_TRUNC('month', date_time)
+        ORDER BY account_id, month;
+    """
 
-    # Apply filters for the query
-    if account_ids is not None:
-        base_query = base_query.filter(db_models.Transaction.account_id.in_(account_ids))
+    # Prepare the WHERE clause if account_ids are provided
+    where_clause = ""
+    if account_ids:
+        where_clause = "WHERE account_id IN :account_ids"
 
-    # Execute the query
-    monthly_balance_query = base_query.all()
+    sql_query = sql_query.format(where_clause=where_clause)
+
+    # Execute the SQL query
+    result = db_session.execute(
+        text(sql_query), {"account_ids": tuple(account_ids)} if account_ids else {}
+    ).fetchall()
 
     # Process results
     results = {}
-    for row in monthly_balance_query:
-        account_id = row.account_id
-        year_month_str = row.month.strftime("%Y-%m")
+
+    for row in result:
+        account_id = row[0]
+        year_month_str = row[1].strftime("%Y-%m")
 
         if account_id not in results:
             start_balance = Decimal(0)
+            start_val_adj_balance = Decimal(0)
             results[account_id] = api_models.MonthlyBalanceResult(
                 account_id=account_id,
                 monthly_balances=[],
@@ -171,23 +186,31 @@ def get_monthly_balances(
         else:
             results[account_id].end_year_month = year_month_str
             previous_month_balance = results[account_id].monthly_balances[-1].end_balance
+            previous_month_val_adj_balance = (
+                results[account_id].monthly_balances[-1].end_val_adj_balance
+            )
             start_balance = previous_month_balance
+            start_val_adj_balance = previous_month_val_adj_balance
 
-        monthly_balance = Decimal(row.monthly_balance)
+        monthly_balance = Decimal(row[2])
+        monthly_val_adj_balance = Decimal(row[4])
         end_balance = start_balance + monthly_balance
+        end_val_adj_balance = start_val_adj_balance + monthly_val_adj_balance
 
         monthly_balance_obj = api_models.MonthlyBalance(
             year_month=year_month_str,
             start_balance=start_balance,
             monthly_balance=monthly_balance,
             end_balance=end_balance,
+            start_val_adj_balance=start_val_adj_balance,
+            end_val_adj_balance=end_val_adj_balance,
         )
 
         results[account_id].monthly_balances.append(monthly_balance_obj)
 
-    # Fill in the missing months with zero balances for each account
+    # Fill in the missing months where there were not transactions
     for account_id, result in results.items():
-        fill_missing_months(result.monthly_balances)
+        result.monthly_balances = fill_missing_months(result.monthly_balances)
 
     return list(results.values())
 
@@ -198,23 +221,30 @@ def fill_missing_months(
     if not monthly_balances:
         return monthly_balances
 
-    year, month = map(int, monthly_balances[0].year_month.split("-"))
-
-    for i in range(1, len(monthly_balances) - 1):
+    def next_year_month(year_month: str) -> str:
+        year, month = map(int, year_month.split("-"))
         month = (month % 12) + 1
         if month == 1:
             year += 1
+        return f"{year:04d}-{month:02d}"
 
-        if monthly_balances[i].year_month != f"{year:04d}-{month:02d}":
-            monthly_balances.insert(
-                i,
+    results = [monthly_balances.pop(0)]
+
+    while monthly_balances:
+        while monthly_balances[0].year_month != next_year_month(results[-1].year_month):
+            results.append(
                 api_models.MonthlyBalance(
-                    year_month=f"{year:04d}-{month:02d}",
-                    start_balance=monthly_balances[i - 1].end_balance,
+                    year_month=next_year_month(results[-1].year_month),
+                    start_balance=results[-1].end_balance,
                     monthly_balance=Decimal(0),
-                    end_balance=monthly_balances[i - 1].end_balance,
-                ),
+                    end_balance=results[-1].end_balance,
+                    start_val_adj_balance=results[-1].end_val_adj_balance,
+                    end_val_adj_balance=results[-1].end_val_adj_balance,
+                )
             )
+        results.append(monthly_balances.pop(0))
+
+    return results
 
 
 # todo split this file up
