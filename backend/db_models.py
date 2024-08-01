@@ -34,6 +34,8 @@ class Account(Base):
 
     # optional fields
     description = OptCol(String)
+    ac_number = OptCol(String)
+    external_link = OptCol(String)
 
     # relationships
     transactions = relationship("Transaction", back_populates="account")

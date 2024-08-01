@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 _orm_config = ConfigDict(from_attributes=True, extra="forbid")
 
 
+# todo simplify? maybe just monthly ones (current/cc) savings and pensions? or have another mapping for that?
 class AcType(StrEnum):
     current_account = auto()
     asset = auto()
@@ -33,7 +34,7 @@ class AcType(StrEnum):
 class IngestType(StrEnum):
     crowd_property_csv = auto()
     csv = auto()
-    money_farm_csv = auto()
+    value_and_contrib_csv = auto()
     ofx_transactions = auto()
 
 
@@ -49,6 +50,8 @@ class AccountCreate(BaseModel):
     default_ingest_type: IngestType = IngestType.csv
     is_active: bool = True
     description: Optional[str] = None
+    ac_number: Optional[str] = None
+    external_link: Optional[str] = None
 
 
 class Account(AccountCreate):

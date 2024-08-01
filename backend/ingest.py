@@ -172,7 +172,7 @@ class CrowdPropertyIngester(CSVFileIngester):
             )
 
 
-class MoneyFarmIngester(CSVFileIngester):
+class ValueAndContributionIngester(CSVFileIngester):
     REQUIRED_FIELDS = {"Date", "Market value", "Net contributions"}
     date_fmt = "%Y-%m-%d"
 
@@ -182,16 +182,14 @@ class MoneyFarmIngester(CSVFileIngester):
     def create_transaction_from_record(self, record: Dict[str, str]) -> None:
         new_net_contrib = Decimal(record["Net contributions"])
         new_market_value = Decimal(record["Market value"])
-        contrib_amount = new_net_contrib - self.prev_net_contrib
 
-        if new_net_contrib > self.prev_net_contrib:
-
+        if contrib_amount := new_net_contrib - self.prev_net_contrib:
             self.transactions.append(
                 super().create_transaction(
                     date_str=record["Date"],
                     date_fmt=self.date_fmt,
                     amount=contrib_amount,
-                    transaction_type="deposit",
+                    transaction_type="Deposit",
                     description="Deposit" if contrib_amount > 0 else "Withdrawal",
                 )
             )
@@ -202,7 +200,7 @@ class MoneyFarmIngester(CSVFileIngester):
                     date_str=record["Date"],
                     date_fmt=self.date_fmt,
                     amount=new_market_value - (self.prev_market_value + contrib_amount),
-                    transaction_type="value adjustment",
+                    transaction_type="Value Adjustment",
                     description="Market value change",
                 )
             )
@@ -222,8 +220,8 @@ def ingest_file(
             ingest_class = OFXFileIngester
         case IngestType.crowd_property_csv:
             ingest_class = CrowdPropertyIngester
-        case IngestType.money_farm_csv:
-            ingest_class = MoneyFarmIngester
+        case IngestType.value_and_contrib_csv:
+            ingest_class = ValueAndContributionIngester
         case _:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

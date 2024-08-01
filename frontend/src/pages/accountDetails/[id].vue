@@ -1,4 +1,12 @@
 <template>
+  <!-- todo move loader below breadcrumbs, ideally loader and breadcrumbs could be in app and the pages could give a loading value-->
+  <v-container
+    v-if="!accountSummary || !selectedMonthlyBalance"
+    class="d-flex align-center justify-center"
+    style="height: 400px"
+  >
+    <v-progress-circular indeterminate></v-progress-circular>
+  </v-container>
   <v-container v-if="accountSummary && selectedMonthlyBalance">
     <v-row>
       <v-col>
@@ -26,14 +34,18 @@
                 {{ accountSummary.account.name }}
               </div>
               <div class="d-flex mb-4">
-                <div class="subheading-text">1234-5678-9012-3456</div>
+                <div class="subheading-text">
+                  {{ accountSummary.account.acNumber }}
+                </div>
                 <v-spacer />
                 <div class="subheading-text">
-                  {{ startMonth ? startMonth.format("mmmm yyyy") : "" }}
+                  {{ startMonth ? startMonth.format("MMMM yyyy") : "" }}
                 </div>
               </div>
 
-              <div class="text-caption">Account notes go here.</div>
+              <div class="text-caption">
+                {{ accountSummary.account.description }}
+              </div>
             </div>
           </v-card-text>
           <v-spacer />
@@ -237,21 +249,16 @@
   watch(
     accountSummary,
     () => {
-      let val: MonthYear;
       if (route.query.date) {
-        val = new MonthYear(`${route.query.date}`);
-      } else {
-        val = new MonthYear();
+        selectedDate.value.goToDate(`${route.query.date}`);
       }
       if (accountSummary.value) {
         //todo should maybe have an error if not
-        val.setBounds(
+        selectedDate.value.setBounds(
           accountSummary.value.monthlyBalances.startYearMonth,
           accountSummary.value.monthlyBalances.endYearMonth
         );
       }
-      // console.log("selectedDate", val);
-      selectedDate.value = val;
     },
     { immediate: true }
   );

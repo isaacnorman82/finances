@@ -1,8 +1,8 @@
 """Initial migration
 
-Revision ID: 3d6cdf20cb63
+Revision ID: 166beb9eb662
 Revises: 
-Create Date: 2024-07-30 23:06:45.644941
+Create Date: 2024-08-01 14:26:10.470515
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '3d6cdf20cb63'
+revision: str = '166beb9eb662'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -26,8 +26,10 @@ def upgrade() -> None:
     sa.Column('account_type', sa.Enum('current_account', 'asset', 'cash_isa', 'credit_card', 'if_isa', 'junior_isa', 'loan', 'mortgage', 'pension', 'savings_account', 'share_isa', 'stockbroker', name='actype'), nullable=False),
     sa.Column('institution', sa.String(), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
-    sa.Column('default_ingest_type', sa.Enum('crowd_property_csv', 'csv', 'money_farm_csv', 'ofx_transactions', name='ingesttype'), nullable=False),
+    sa.Column('default_ingest_type', sa.Enum('crowd_property_csv', 'csv', 'value_and_contrib_csv', 'ofx_transactions', name='ingesttype'), nullable=False),
     sa.Column('description', sa.String(), nullable=True),
+    sa.Column('ac_number', sa.String(), nullable=True),
+    sa.Column('external_link', sa.String(), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('institution', 'name', name='unique_institution_name')
     )

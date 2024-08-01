@@ -30,6 +30,8 @@ export interface AccountCreate {
   defaultIngestType?: IngestType;
   isActive?: boolean;
   description?: string | null;
+  acNumber: string | null;
+  externalLink: string | null;
 }
 
 export interface Account extends AccountCreate {
@@ -123,14 +125,19 @@ export class MonthYear {
   constructor(dateString?: string);
   constructor(dateString?: string) {
     if (dateString) {
-      const [year, month] = dateString.split("-").map(Number);
-      this.year = year;
-      this.month = month;
+      this.goToDate(dateString);
     } else {
       const currentDate = new Date();
       this.year = currentDate.getUTCFullYear();
       this.month = currentDate.getUTCMonth() + 1;
     }
+  }
+
+  goToDate(dateString: string): void {
+    const [year, month] = dateString.split("-").map(Number);
+    this.year = year;
+    this.month = month;
+    this.applyBounds();
   }
 
   toDate(): Date {
@@ -162,6 +169,7 @@ export class MonthYear {
   setBounds(min: string, max: string): void {
     this.min = new MonthYear(min);
     this.max = new MonthYear(max);
+    this.applyBounds();
   }
 
   toStart(): void {
