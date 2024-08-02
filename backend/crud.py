@@ -144,11 +144,11 @@ def get_monthly_balances(
                 PARTITION BY account_id
                 ORDER BY DATE_TRUNC('month', date_time)
             ) AS cumulative_balance,
-            SUM(CASE WHEN is_value_adjustment THEN amount ELSE 0 END) AS monthly_val_adj_balance,
-            SUM(SUM(CASE WHEN is_value_adjustment THEN amount ELSE 0 END)) OVER (
+            SUM(CASE WHEN is_value_adjustment THEN 0 ELSE amount END) AS monthly_deposit,
+            SUM(SUM(CASE WHEN is_value_adjustment THEN 0 ELSE amount END)) OVER (
                 PARTITION BY account_id
                 ORDER BY DATE_TRUNC('month', date_time)
-            ) AS cumulative_val_adj_balance
+            ) AS cumulative_deposits
         FROM transactions
         {where_clause}
         GROUP BY account_id, DATE_TRUNC('month', date_time)
@@ -176,7 +176,6 @@ def get_monthly_balances(
 
         if account_id not in results:
             start_balance = Decimal(0)
-            start_val_adj_balance = Decimal(0)
             results[account_id] = api_models.MonthlyBalanceResult(
                 account_id=account_id,
                 monthly_balances=[],
@@ -186,29 +185,23 @@ def get_monthly_balances(
         else:
             results[account_id].end_year_month = year_month_str
             previous_month_balance = results[account_id].monthly_balances[-1].end_balance
-            previous_month_val_adj_balance = (
-                results[account_id].monthly_balances[-1].end_val_adj_balance
-            )
             start_balance = previous_month_balance
-            start_val_adj_balance = previous_month_val_adj_balance
 
         monthly_balance = Decimal(row[2])
-        monthly_val_adj_balance = Decimal(row[4])
         end_balance = start_balance + monthly_balance
-        end_val_adj_balance = start_val_adj_balance + monthly_val_adj_balance
+        deposits_to_date = Decimal(row[5])  # Cumulative deposits
 
         monthly_balance_obj = api_models.MonthlyBalance(
             year_month=year_month_str,
             start_balance=start_balance,
             monthly_balance=monthly_balance,
             end_balance=end_balance,
-            start_val_adj_balance=start_val_adj_balance,
-            end_val_adj_balance=end_val_adj_balance,
+            deposits_to_date=deposits_to_date,
         )
 
         results[account_id].monthly_balances.append(monthly_balance_obj)
 
-    # Fill in the missing months where there were not transactions
+    # Fill in the missing months where there were no transactions
     for account_id, result in results.items():
         result.monthly_balances = fill_missing_months(result.monthly_balances)
 
@@ -231,18 +224,20 @@ def fill_missing_months(
     results = [monthly_balances.pop(0)]
 
     while monthly_balances:
-        while monthly_balances[0].year_month != next_year_month(results[-1].year_month):
+        while monthly_balances and monthly_balances[0].year_month != next_year_month(
+            results[-1].year_month
+        ):
             results.append(
                 api_models.MonthlyBalance(
                     year_month=next_year_month(results[-1].year_month),
                     start_balance=results[-1].end_balance,
                     monthly_balance=Decimal(0),
                     end_balance=results[-1].end_balance,
-                    start_val_adj_balance=results[-1].end_val_adj_balance,
-                    end_val_adj_balance=results[-1].end_val_adj_balance,
+                    deposits_to_date=results[-1].deposits_to_date,
                 )
             )
-        results.append(monthly_balances.pop(0))
+        if monthly_balances:
+            results.append(monthly_balances.pop(0))
 
     return results
 

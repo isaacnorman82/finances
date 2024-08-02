@@ -92,6 +92,9 @@
     scales: {
       x: {
         stacked: true,
+        grid: {
+          display: false, // Disable vertical grid lines
+        },
       },
       y: {
         stacked: true,

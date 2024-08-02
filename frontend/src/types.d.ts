@@ -80,8 +80,7 @@ export interface MonthlyBalance {
   startBalance: string;
   monthlyBalance: string;
   endBalance: string;
-  startValAdjBalance: string;
-  endValAdjBalance: string;
+  depositsToDate: string;
 }
 
 export interface MonthlyBalanceResult {

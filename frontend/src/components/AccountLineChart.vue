@@ -59,30 +59,28 @@
 
       const months = props.selectedDate.getMonthsForTimescale(props.timescale);
 
-      // Extract cumulative balances
+      // Extract balances
       const balancesMap = new Map(
         props.accountSummary.monthlyBalances.monthlyBalances.map(
           (mb: MonthlyBalance) => [mb.yearMonth, parseBalance(mb.endBalance)]
         )
       );
 
-      // Extract value adjusted balances
-      const adjBalancesMap = new Map(
+      // Extract deposits to date
+      const depositsMap = new Map(
         props.accountSummary.monthlyBalances.monthlyBalances.map(
           (mb: MonthlyBalance) => [
             mb.yearMonth,
-            parseBalance(mb.startValAdjBalance),
+            parseBalance(mb.depositsToDate),
           ]
         )
       );
 
       // Create the data arrays with null for missing months
       const balanceData = months.map((month) => balancesMap.get(month) ?? null);
-      const adjBalanceData = months.map((month) => {
-        const balance = balancesMap.get(month) ?? null;
-        const adjBalance = adjBalancesMap.get(month) ?? 0;
-        return balance !== null ? balance - adjBalance : null;
-      });
+      const depositsData = months.map(
+        (month) => depositsMap.get(month) ?? null
+      );
 
       return {
         labels: months,
@@ -94,11 +92,11 @@
             spanGaps: false,
             borderColor: "rgba(72, 168, 166, 1)",
           },
-          ...(JSON.stringify(balanceData) !== JSON.stringify(adjBalanceData)
+          ...(JSON.stringify(balanceData) !== JSON.stringify(depositsData)
             ? [
                 {
-                  label: "Payments",
-                  data: adjBalanceData,
+                  label: "Deposits",
+                  data: depositsData,
                   fill: false,
                   spanGaps: false,
                   borderColor: "rgba(24, 102, 192, 1)",
@@ -135,6 +133,8 @@
         display: false,
       },
       tooltip: {
+        mode: "index", // Ensure the tooltip shows all values at the hovered index
+        intersect: false, // Ensure the tooltip shows even if not directly intersecting a point
         callbacks: {
           label: (context) => {
             let label = context.dataset.label || "";

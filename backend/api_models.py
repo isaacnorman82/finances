@@ -137,8 +137,7 @@ class MonthlyBalance(BaseModel):
     start_balance: Decimal
     monthly_balance: Decimal
     end_balance: Decimal
-    start_val_adj_balance: Decimal
-    end_val_adj_balance: Decimal
+    deposits_to_date: Decimal
 
 
 class MonthlyBalanceResult(BaseModel):
