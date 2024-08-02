@@ -52,7 +52,12 @@
           <v-card-actions>
             <v-btn prepend-icon="mdi-cog" text="Settings" />
             <v-spacer />
-            <v-btn append-icon="mdi-open-in-new" text="Login" />
+            <v-btn
+              :disabled="!accountSummary.account.externalLink"
+              append-icon="mdi-open-in-new"
+              text="Login"
+              @click="navigateToExternalLink"
+            />
           </v-card-actions>
         </v-card>
       </v-col>
@@ -370,6 +375,12 @@
     }
     return null;
   });
+
+  const navigateToExternalLink = () => {
+    if (accountSummary.value && accountSummary.value.account.externalLink) {
+      window.open(accountSummary.value.account.externalLink, "_blank");
+    }
+  };
 </script>
 
 <style scoped>
