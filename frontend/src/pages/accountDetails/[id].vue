@@ -56,7 +56,8 @@
               :disabled="!accountSummary.account.externalLink"
               append-icon="mdi-open-in-new"
               text="Login"
-              @click="navigateToExternalLink"
+              :href="accountSummary.account.externalLink || ''"
+              target="_blank"
             />
           </v-card-actions>
         </v-card>
@@ -375,12 +376,6 @@
     }
     return null;
   });
-
-  const navigateToExternalLink = () => {
-    if (accountSummary.value && accountSummary.value.account.externalLink) {
-      window.open(accountSummary.value.account.externalLink, "_blank");
-    }
-  };
 </script>
 
 <style scoped>
