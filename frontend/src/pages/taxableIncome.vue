@@ -2,7 +2,7 @@
   <v-container>
     <v-row>
       <v-col>
-        <v-breadcrumbs :items="breadcrumbs">
+        <v-breadcrumbs :items="breadcrumbs" class="text-h5">
           <template v-slot:item="{ item }">
             <v-breadcrumbs-item :disabled="item.disabled" :to="item.to">
               {{ item.title }}
@@ -13,12 +13,12 @@
     </v-row>
     <v-row>
       <v-col>
-        <v-card flat title="Taxable Income">
+        <v-card flat title="Taxable Income" color="primary" variant="tonal">
           <StackedBarChart :data="taxableIncomeSeries as ChartData<'bar'>" />
         </v-card>
       </v-col>
       <v-col>
-        <v-card flat title="Salary">
+        <v-card flat title="Salary" color="secondary" variant="tonal">
           <StackedBarChart :data="salarySeries as ChartData<'bar'>" />
         </v-card>
       </v-col>
@@ -31,7 +31,7 @@
   import { ChartData } from "chart.js";
 
   const breadcrumbs = computed(() => {
-    return [{ title: "Salary and Tax", disabled: false }];
+    return [{ title: "Taxable Income", disabled: false }];
   });
 
   const taxableIncomeSeries = computed<ChartData>(() => {

@@ -1,21 +1,47 @@
 <template>
   <v-app app>
-    <!-- <v-app-bar
-      app
-      :elevation="5"
-      rounded
-      scroll-behavior="hide collapse"
-      scroll-threshold="1"
-    >
+    <!-- <v-app-bar app flat rounded>
       <template v-slot:prepend>
         <v-app-bar-nav-icon />
       </template>
 
       <v-app-bar-title>Application Bar</v-app-bar-title>
-
     </v-app-bar> -->
+    <v-navigation-drawer permanent expand-on-hover rail>
+      <v-list>
+        <v-list-item subtitle="By Isaac Norman" title="Finances"
+          ><template #prepend>
+            <img
+              src="/favicon.svg"
+              style="height: 24px; width: 24px; margin-right: 32px"
+            /> </template
+        ></v-list-item>
+      </v-list>
+
+      <v-divider></v-divider>
+
+      <v-list density="compact" nav>
+        <v-list-item
+          prepend-icon="mdi-finance"
+          title="Summary"
+          to="/"
+        ></v-list-item>
+        <v-list-item
+          prepend-icon="mdi-cash-multiple"
+          title="Accounts"
+          to="accounts"
+        ></v-list-item>
+        <v-list-item
+          prepend-icon="mdi-hand-coin"
+          title="Taxable Income"
+          to="taxableIncome"
+        ></v-list-item>
+      </v-list>
+    </v-navigation-drawer>
     <v-main>
-      <router-view />
+      <div class="app-container">
+        <router-view />
+      </div>
     </v-main>
   </v-app>
 </template>
@@ -56,3 +82,10 @@
     );
   };
 </script>
+
+<style>
+  .app-container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+</style>

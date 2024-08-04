@@ -1,8 +1,8 @@
 <template>
-  <v-container>
+  <v-container fluid>
     <v-row>
       <v-col>
-        <v-breadcrumbs :items="breadcrumbs">
+        <v-breadcrumbs :items="breadcrumbs" class="text-h5">
           <template v-slot:item="{ item }">
             <v-breadcrumbs-item :disabled="item.disabled" :to="item.to">
               {{ item.title }}
@@ -41,10 +41,12 @@
       </v-col>
     </v-row>
     <v-row>
-      <StackedBarChart
-        :data="chartData"
-        @chartClick="navigateToAccountDetails"
-      />
+      <v-col>
+        <StackedBarChart
+          :data="chartData"
+          @chartClick="navigateToAccountDetails"
+        />
+      </v-col>
     </v-row>
   </v-container>
 </template>
@@ -56,6 +58,7 @@
   import {
     findAccountSummaryFromLabel,
     formatBalance,
+    formatHeaderText,
     formatLastTransactionDate,
     getSeededColor,
   } from "@/utils";
@@ -73,7 +76,7 @@
   const breadcrumbs = computed(() => {
     return [
       {
-        title: "Accounts",
+        title: "Summary",
         disabled: false,
       },
     ];
@@ -126,12 +129,6 @@
       return total + parseFloat(accountSummary.balance);
     }, 0);
   });
-
-  const formatHeaderText = (text: string): string => {
-    return text
-      .replace(/([a-z0-9])([A-Z])/g, "$1 $2") // Add space before uppercase letters
-      .replace(/^./, (str) => str.toUpperCase()); // Capitalize the first letter
-  };
 
   const tableHeaders = computed(() => {
     if (tableData.value.length === 0) return [];

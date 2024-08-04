@@ -7,10 +7,10 @@
   >
     <v-progress-circular indeterminate></v-progress-circular>
   </v-container>
-  <v-container v-if="accountSummary && selectedMonthlyBalance">
+  <v-container fluid v-if="accountSummary && selectedMonthlyBalance">
     <v-row>
       <v-col>
-        <v-breadcrumbs :items="breadcrumbs">
+        <v-breadcrumbs :items="breadcrumbs" class="text-h5">
           <template v-slot:item="{ item }">
             <v-breadcrumbs-item :disabled="item.disabled" :to="item.to">
               {{ item.title }}
@@ -329,7 +329,7 @@
       {
         title: "Accounts",
         disabled: false,
-        to: "/",
+        to: "accounts",
       },
       {
         title:

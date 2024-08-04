@@ -243,3 +243,9 @@ export function dataSeriesToChartData(
     datasets,
   };
 }
+
+export function formatHeaderText(text: string): string {
+  return text
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2") // Add space before uppercase letters
+    .replace(/^./, (str) => str.toUpperCase()); // Capitalize the first letter
+}
