@@ -2,7 +2,7 @@ import { getAccountsSummary } from "@/services/apiService";
 import type { AccountSummary } from "@/types.d.ts";
 import { defineStore } from "pinia";
 
-export const useAccountSummaries = defineStore("accountSummaries", {
+export const useAccountSummariesStore = defineStore("accountSummaries", {
   state: () => ({
     accountSummaries: [] as AccountSummary[],
   }),

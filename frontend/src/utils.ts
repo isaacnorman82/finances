@@ -1,6 +1,8 @@
 import type { AccountSummary, MonthlyBalance } from "@/types.d";
 import { MonthYear, Timescale } from "@/types.d";
+import { ChartData } from "chart.js";
 import { startOfMonth, subMonths } from "date-fns";
+import { useDataSeriesStore } from "./stores/dataSeries";
 
 export function formatBalance(balance: string | number): string {
   // console.log("Formatting balance", balance);
@@ -134,4 +136,104 @@ export function findAccountSummaryFromLabel(
         summary.account.name === name
     ) ?? null
   );
+}
+
+export function formatTaxYear(date: string): string {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = d.getMonth() + 1;
+  return month < 4
+    ? `${year - 1}/${year.toString().slice(-2)}`
+    : `${year}/${(year + 1).toString().slice(-2)}`;
+}
+
+export function formatMonthYear(date: string): string {
+  const d = new Date(date);
+  const month = (d.getMonth() + 1).toString().padStart(2, "0");
+  const year = d.getFullYear();
+
+  return `${month}/${year}`;
+}
+
+export function seededRandom(seed: number): number {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
+
+export function hashStringToNumber(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return hash;
+}
+
+// Existing getSeededColor function updated to handle string seeds
+export function getSeededColor(seed: number | string): string {
+  if (typeof seed === "string") {
+    seed = hashStringToNumber(seed);
+  }
+  const letters = "0123456789ABCDEF";
+  let color = "#";
+  for (let i = 0; i < 6; i++) {
+    const randomIndex = Math.floor(seededRandom(seed + i) * 16);
+    color += letters[randomIndex];
+  }
+  return color;
+}
+
+export function dataSeriesToChartData(
+  keysOrColorMap: string[] | Record<string, string>,
+  formatDate: (dateTime: string) => string = formatTaxYear
+): ChartData {
+  const dataSeriesStore = useDataSeriesStore();
+  const keys = Array.isArray(keysOrColorMap)
+    ? keysOrColorMap
+    : Object.keys(keysOrColorMap);
+  const dataSeriesArray = dataSeriesStore.getDataSeries(keys);
+
+  if (dataSeriesArray.length === 0) {
+    return {
+      labels: [],
+      datasets: [],
+    };
+  }
+
+  // Extract all unique labels from dataSeriesArray
+  const uniqueDates = new Set<string>();
+  dataSeriesArray.forEach((dataSeries) => {
+    uniqueDates.add(formatDate(dataSeries.dateTime));
+  });
+
+  const labels = Array.from(uniqueDates).sort();
+
+  // Create datasets for each key, aligning data with the unique dates
+  const datasetsMap = new Map<
+    string,
+    { label: string; data: (number | null)[]; backgroundColor: string }
+  >();
+
+  dataSeriesArray.forEach((dataSeries) => {
+    if (!datasetsMap.has(dataSeries.key)) {
+      datasetsMap.set(dataSeries.key, {
+        label: dataSeries.key,
+        data: Array(labels.length).fill(null),
+        backgroundColor: Array.isArray(keysOrColorMap)
+          ? getSeededColor(dataSeries.key)
+          : keysOrColorMap[dataSeries.key],
+      });
+    }
+    const dataset = datasetsMap.get(dataSeries.key)!;
+    const dateIndex = labels.indexOf(formatDate(dataSeries.dateTime));
+    if (dateIndex !== -1) {
+      dataset.data[dateIndex] = parseFloat(dataSeries.value);
+    }
+  });
+
+  const datasets = Array.from(datasetsMap.values());
+
+  return {
+    labels,
+    datasets,
+  };
 }

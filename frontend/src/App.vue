@@ -37,7 +37,7 @@
     document.title = "My Vuetify App";
 
     // Set the favicon
-    setFavicon("/public/favicon.svg");
+    setFavicon("/favicon.svg");
   });
 
   const setFavicon = (url: string) => {

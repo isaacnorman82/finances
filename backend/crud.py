@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from fastapi import HTTPException, status
 from sqlalchemy import func, text
@@ -259,8 +259,8 @@ def get_transaction_rule(id: int, db_session: Session) -> api_models.Transaction
 def get_rules(
     db_session: Session,
     account_ids: Optional[List[int]] = None,
-    as_api_models: bool = True,
-) -> List[api_models.TransactionRule]:
+    as_db_model: bool = False,
+) -> Union[List[api_models.TransactionRule], List[db_models.TransactionRule]]:
     query = db_session.query(db_models.TransactionRule)
 
     if account_ids is not None:
@@ -273,16 +273,14 @@ def get_rules(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"No rules found for {account_ids=}"
         )
 
-    if not as_api_models:
+    if as_db_model:
         return results
     return [api_models.TransactionRule.model_validate(result) for result in results]
 
 
 def run_rules(db_session: Session, account_ids: Optional[List[int]] = None):
     rules: List[api_models.TransactionRule] = get_rules(
-        db_session=db_session,
-        account_ids=account_ids,
-        as_api_models=True,
+        db_session=db_session, account_ids=account_ids
     )
 
     try:
@@ -304,5 +302,38 @@ def run_rules(db_session: Session, account_ids: Optional[List[int]] = None):
     except Exception as e:
         db_session.rollback()
         raise
-    finally:
-        db_session.close()
+
+
+def add_data_series(
+    db_session: Session,
+    values: List[api_models.DataSeriesCreate],
+) -> api_models.AddDataSeriesResult:
+    new_data_series = [db_models.DataSeries(**value.model_dump()) for value in values]
+
+    try:
+        db_session.add_all(new_data_series)
+        db_session.commit()
+    except Exception as ex:
+        logger.error(f"Error adding data series: {ex}")
+        db_session.rollback()
+        raise
+
+    return api_models.AddDataSeriesResult(values_added=len(new_data_series))
+
+
+def get_data_series(
+    db_session: Session,
+    keys: Optional[List[str]] = None,
+    as_db_model: bool = False,
+) -> Union[List[api_models.DataSeries], List[db_models.DataSeries]]:
+    query = db_session.query(db_models.DataSeries)
+
+    if keys:
+        query = query.filter(db_models.DataSeries.key.in_(keys))
+
+    results = query.all()
+
+    if as_db_model:
+        return results
+
+    return [api_models.DataSeries.model_validate(result) for result in results]

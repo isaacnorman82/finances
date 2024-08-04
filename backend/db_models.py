@@ -80,3 +80,13 @@ class TransactionRule(Base):
 
 # todo will need tags on transactions
 # might be helpful: https://www.databasesoup.com/2015/01/tag-all-things.html
+
+
+class DataSeries(Base):
+    __tablename__ = "data_series"
+    id = Column(Integer, primary_key=True)
+
+    # required fields
+    date_time = ReqCol(DateTime, index=True)
+    key = ReqCol(String, index=True)
+    value = ReqCol(String)

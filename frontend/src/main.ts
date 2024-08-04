@@ -11,8 +11,9 @@ import { registerPlugins } from "@/plugins";
 import App from "./App.vue";
 
 // Composables
-import { useAccountSummaries } from "@/stores/accountSummaries";
+import { useAccountSummariesStore } from "@/stores/accountSummaries";
 import { createApp } from "vue";
+import { useDataSeriesStore } from "./stores/dataSeries";
 
 const app = createApp(App);
 
@@ -20,5 +21,8 @@ registerPlugins(app);
 
 app.mount("#app");
 
-const accountSummariesStore = useAccountSummaries();
+const accountSummariesStore = useAccountSummariesStore();
 accountSummariesStore.loadAccountSummaries();
+
+const dataSeriesStore = useDataSeriesStore();
+dataSeriesStore.loadDataSeries();

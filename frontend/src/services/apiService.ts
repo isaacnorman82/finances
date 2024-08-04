@@ -7,6 +7,8 @@ import type {
   AccountCreate,
   AccountSummary,
   BalanceResult,
+  DataSeries,
+  DataSeriesCreate,
   IngestResult,
   MonthlyBalanceResult,
   Transaction,
@@ -179,5 +181,37 @@ export const getMonthlyBalances = async (
  */
 export const getAccountsSummary = async (): Promise<AccountSummary[]> => {
   const response = await apiClient.get("/accounts/summary/");
+  return response.data;
+};
+
+/**
+ * Get all data series.
+ * @param keys A single key or a list of keys (comma-separated string or array of strings)
+ * @returns A promise that resolves to an array of data series
+ */
+export const getDataSeries = async (
+  keys?: string | string[]
+): Promise<DataSeries[]> => {
+  // If keys is an array, join it into a comma-separated string
+  const formattedKeys = Array.isArray(keys) ? keys.join(",") : keys;
+
+  const response = await apiClient.get("/dataseries/", {
+    params: {
+      keys: formattedKeys,
+    },
+  });
+
+  return response.data;
+};
+
+/**
+ * Create a data series entry.
+ * @param dataSeries - Data series entry to create
+ * @returns A promise that resolves to the created data series entry
+ */
+export const createDataSeries = async (
+  dataSeries: DataSeriesCreate
+): Promise<DataSeries> => {
+  const response = await apiClient.post("/dataseries/", dataSeries);
   return response.data;
 };

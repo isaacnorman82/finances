@@ -97,6 +97,16 @@ export interface AccountSummary {
   lastTransactionDate: string | null;
 }
 
+export interface DataSeriesCreate {
+  dateTime: string;
+  key: string;
+  value: string;
+}
+
+export interface DataSeries extends DataSeriesCreate {
+  id: number;
+}
+
 export enum Timescale {
   All = 0,
   FiveYears = 60,

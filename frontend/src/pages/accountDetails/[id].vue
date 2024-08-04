@@ -221,8 +221,8 @@
 </template>
 
 <script setup lang="ts">
-  import { useAccountSummaries } from "@/stores/accountSummaries";
-  import { useTransactions } from "@/stores/transactions";
+  import { useAccountSummariesStore } from "@/stores/accountSummaries";
+  import { useTransactionsStore } from "@/stores/transactions";
   import type { AccountSummary, Transaction } from "@/types.d";
   import { MonthYear, Timescale } from "@/types.d";
   import {
@@ -240,14 +240,14 @@
   const route = useRoute("/accountDetails/[id]");
   const accountId: number = parseInt(route.params.id);
 
-  const accountSummariesStore = useAccountSummaries();
+  const accountSummariesStore = useAccountSummariesStore();
   const accountSummary = computed<AccountSummary | undefined>(() => {
     return accountSummariesStore.accountSummaries.find(
       (summary) => summary.account.id === accountId
     );
   });
 
-  const transactionsStore = useTransactions();
+  const transactionsStore = useTransactionsStore();
   const transactions = ref<Transaction[]>([]);
 
   const selectedDate = ref<MonthYear>(new MonthYear());

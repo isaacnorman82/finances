@@ -1,8 +1,8 @@
 """Initial migration
 
-Revision ID: 166beb9eb662
+Revision ID: 58a23063c86b
 Revises: 
-Create Date: 2024-08-01 14:26:10.470515
+Create Date: 2024-08-03 16:45:09.311157
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '166beb9eb662'
+revision: str = '58a23063c86b'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -36,6 +36,15 @@ def upgrade() -> None:
     op.create_index(op.f('ix_accounts_account_type'), 'accounts', ['account_type'], unique=False)
     op.create_index(op.f('ix_accounts_institution'), 'accounts', ['institution'], unique=False)
     op.create_index(op.f('ix_accounts_name'), 'accounts', ['name'], unique=False)
+    op.create_table('data_series',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('date_time', sa.DateTime(), nullable=False),
+    sa.Column('key', sa.String(), nullable=False),
+    sa.Column('value', sa.String(), nullable=False),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_data_series_date_time'), 'data_series', ['date_time'], unique=False)
+    op.create_index(op.f('ix_data_series_key'), 'data_series', ['key'], unique=False)
     op.create_table('transaction_rule',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('account_id', sa.Integer(), nullable=False),
@@ -73,6 +82,9 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_transactions_date_time'), table_name='transactions')
     op.drop_table('transactions')
     op.drop_table('transaction_rule')
+    op.drop_index(op.f('ix_data_series_key'), table_name='data_series')
+    op.drop_index(op.f('ix_data_series_date_time'), table_name='data_series')
+    op.drop_table('data_series')
     op.drop_index(op.f('ix_accounts_name'), table_name='accounts')
     op.drop_index(op.f('ix_accounts_institution'), table_name='accounts')
     op.drop_index(op.f('ix_accounts_account_type'), table_name='accounts')

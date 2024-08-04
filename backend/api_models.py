@@ -152,3 +152,18 @@ class AccountSummary(BaseModel):
     balance: Decimal
     monthly_balances: MonthlyBalanceResult
     last_transaction_date: Optional[datetime] = None
+
+
+class DataSeriesCreate(BaseModel):
+    date_time: datetime
+    key: str
+    value: str
+
+
+class DataSeries(DataSeriesCreate):
+    model_config = _orm_config
+    id: int
+
+
+class AddDataSeriesResult(BaseModel):
+    values_added: int

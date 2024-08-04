@@ -1,5 +1,7 @@
 <template>
-  <Bar v-if="data" :data="data" :options="chartOptions" />
+  <div v-if="data" class="chart-container">
+    <Bar :data="data" :options="chartOptions" />
+  </div>
   <div v-else>Loading...</div>
 </template>
 
@@ -123,6 +125,7 @@
 <style scoped>
   .chart-container {
     position: relative;
-    flex-grow: 1 1 auto;
+    width: 100%;
+    /* height: 400px; Set a fixed height or use other methods to control the height */
   }
 </style>

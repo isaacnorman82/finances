@@ -21,7 +21,7 @@ function getMonthStartEnd(
   return { startDate, endDate };
 }
 
-export const useTransactions = defineStore("transactions", {
+export const useTransactionsStore = defineStore("transactions", {
   state: () => ({
     transactionsCache: {} as Record<string, Transaction[]>,
   }),

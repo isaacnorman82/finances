@@ -175,7 +175,6 @@ def api_ingest_transactions(
     account: db_models.Account = Depends(get_account_from_path),
     db_session: Session = Depends(get_db_session),
 ):
-    logger.info("ingesting")
     if ingest_type is None:
         ingest_type = account.default_ingest_type
     result = ingest_file(

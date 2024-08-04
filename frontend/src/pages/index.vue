@@ -41,29 +41,28 @@
       </v-col>
     </v-row>
     <v-row>
-      <v-col>
-        <StackedBarChart
-          :data="chartData"
-          @chartClick="navigateToAccountDetails"
-        />
-      </v-col>
+      <StackedBarChart
+        :data="chartData"
+        @chartClick="navigateToAccountDetails"
+      />
     </v-row>
   </v-container>
 </template>
 
 <script setup lang="ts">
   import StackedBarChart from "@/components/StackedBarChart.vue";
-  import { useAccountSummaries } from "@/stores/accountSummaries";
+  import { useAccountSummariesStore } from "@/stores/accountSummaries";
   import type { AccountSummary } from "@/types.d.ts";
   import {
     findAccountSummaryFromLabel,
     formatBalance,
     formatLastTransactionDate,
+    getSeededColor,
   } from "@/utils";
   import { ChartData } from "chart.js";
   import { computed, ref } from "vue";
 
-  const accountSummariesStore = useAccountSummaries();
+  const accountSummariesStore = useAccountSummariesStore();
   const accountSummaries = computed<AccountSummary[]>(
     () => accountSummariesStore.accountSummaries
   );
@@ -186,31 +185,6 @@
       datasets,
     };
   });
-
-  // Function to generate random colors for the datasets
-  // function getRandomColor() {
-  //   const letters = "0123456789ABCDEF";
-  //   let color = "#";
-  //   for (let i = 0; i < 6; i++) {
-  //     color += letters[Math.floor(Math.random() * 16)];
-  //   }
-  //   return color;
-  // }
-
-  function seededRandom(seed: number): number {
-    const x = Math.sin(seed) * 10000;
-    return x - Math.floor(x);
-  }
-
-  function getSeededColor(seed: number): string {
-    const letters = "0123456789ABCDEF";
-    let color = "#";
-    for (let i = 0; i < 6; i++) {
-      const randomIndex = Math.floor(seededRandom(seed + i) * 16);
-      color += letters[randomIndex];
-    }
-    return color;
-  }
 </script>
 
 <style scoped></style>
