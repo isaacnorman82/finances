@@ -199,13 +199,19 @@ export function dataSeriesToChartData(
     };
   }
 
-  // Extract all unique labels from dataSeriesArray
+  // Extract all unique dates from dataSeriesArray
   const uniqueDates = new Set<string>();
   dataSeriesArray.forEach((dataSeries) => {
-    uniqueDates.add(formatDate(dataSeries.dateTime));
+    uniqueDates.add(dataSeries.dateTime);
   });
 
-  const labels = Array.from(uniqueDates).sort();
+  // Convert uniqueDates to an array and sort them
+  const sortedDates = Array.from(uniqueDates).sort(
+    (a, b) => new Date(a).getTime() - new Date(b).getTime()
+  );
+
+  // Format the sorted dates
+  const labels = sortedDates.map((date) => formatDate(date));
 
   // Create datasets for each key, aligning data with the unique dates
   const datasetsMap = new Map<
@@ -224,7 +230,7 @@ export function dataSeriesToChartData(
       });
     }
     const dataset = datasetsMap.get(dataSeries.key)!;
-    const dateIndex = labels.indexOf(formatDate(dataSeries.dateTime));
+    const dateIndex = sortedDates.indexOf(dataSeries.dateTime);
     if (dateIndex !== -1) {
       dataset.data[dateIndex] = parseFloat(dataSeries.value);
     }
