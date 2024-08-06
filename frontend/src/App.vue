@@ -29,12 +29,12 @@
         <v-list-item
           prepend-icon="mdi-cash-multiple"
           title="Accounts"
-          to="accounts"
+          to="/accounts"
         ></v-list-item>
         <v-list-item
           prepend-icon="mdi-hand-coin"
           title="Taxable Income"
-          to="taxableIncome"
+          to="/taxableIncome"
         ></v-list-item>
       </v-list>
     </v-navigation-drawer>

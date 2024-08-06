@@ -57,23 +57,33 @@
         throw new Error("Account summary is required");
       }
 
-      const months = props.selectedDate.getMonthsForTimescale(props.timescale);
+      const graphDate = props.selectedDate.copy();
+      graphDate.toEnd();
+
+      const months = graphDate.getMonthsForTimescale(props.timescale);
+
+      // Filter out entries with interpolated == "inter"
+      // const filteredBalances =
+      //   props.accountSummary.monthlyBalances.monthlyBalances.filter(
+      //     (mb: MonthlyBalance) => mb.interpolated !== "inter"
+      //   );
+      const filteredBalances =
+        props.accountSummary.monthlyBalances.monthlyBalances;
 
       // Extract balances
       const balancesMap = new Map(
-        props.accountSummary.monthlyBalances.monthlyBalances.map(
-          (mb: MonthlyBalance) => [mb.yearMonth, parseBalance(mb.endBalance)]
-        )
+        filteredBalances.map((mb: MonthlyBalance) => [
+          mb.yearMonth,
+          parseBalance(mb.endBalance),
+        ])
       );
 
       // Extract deposits to date
       const depositsMap = new Map(
-        props.accountSummary.monthlyBalances.monthlyBalances.map(
-          (mb: MonthlyBalance) => [
-            mb.yearMonth,
-            parseBalance(mb.depositsToDate),
-          ]
-        )
+        filteredBalances.map((mb: MonthlyBalance) => [
+          mb.yearMonth,
+          parseBalance(mb.depositsToDate),
+        ])
       );
 
       // Create the data arrays with null for missing months
@@ -89,7 +99,7 @@
             label: "Value",
             data: balanceData,
             fill: false,
-            spanGaps: false,
+            spanGaps: true,
             borderColor: "rgba(72, 168, 166, 1)",
           },
           ...(JSON.stringify(balanceData) !== JSON.stringify(depositsData)
@@ -98,7 +108,7 @@
                   label: "Deposits",
                   data: depositsData,
                   fill: false,
-                  spanGaps: false,
+                  spanGaps: true,
                   borderColor: "rgba(24, 102, 192, 1)",
                 },
               ]

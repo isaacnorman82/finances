@@ -107,7 +107,14 @@ def api_get_accounts_summary(db_session: Session = Depends(get_db_session)):
             )
         )
 
-    return results
+    # sort accounts by earliest monthly balance
+    # todo if we have broader types we can sort by type and then by date
+    # would be good to sort by assets, pensions, savings, current, credit
+    # for now just move the pension first after the basic sort
+    results.sort(key=lambda x: x.monthly_balances.start_year_month)
+    assets = [val for val in results if val.account.account_type == api_models.AcType.asset]
+    not_assets = [val for val in results if val.account.account_type != api_models.AcType.asset]
+    return assets + not_assets
 
 
 @router.get("/{account_id}/", summary="Get Account by ID", response_model=api_models.Account)

@@ -1,4 +1,5 @@
 import logging
+import statistics
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import List, Optional, Union
@@ -201,18 +202,68 @@ def get_monthly_balances(
 
         results[account_id].monthly_balances.append(monthly_balance_obj)
 
+    # get the account objects
+    accounts = get_accounts(db_session)
+
     # Fill in the missing months where there were no transactions
     for account_id, result in results.items():
-        result.monthly_balances = fill_missing_months(result.monthly_balances)
+        # add a final value to the current date for accounts we don't have up to date data for
+        account = next(account for account in accounts if account.id == account_id)
+        interpolate_to_current_date(account, result)
+
+        # gap fill to ensure we have data for all months up to the current month
+        fill_missing_months(account, result)
+
+    # sort by earliest start date
+    results = dict(sorted(results.items(), key=lambda item: item[1].start_year_month))
 
     return list(results.values())
 
 
+def interpolate_to_current_date(
+    account: api_models.Account,
+    monthly_balance_result: api_models.MonthlyBalanceResult,
+):
+    if not account.is_active:
+        # don't extend closed accounts
+        return
+
+    # todo find places that do this test and maybe have a specific account flag
+    if account.default_ingest_type != api_models.IngestType.value_and_contrib_csv:
+        # don't want to interpolate end values for these accounts
+        return
+
+    now_year_month: str = datetime.now().strftime("%Y-%m")
+
+    if monthly_balance_result.end_year_month == now_year_month:
+        # nothing to do
+        return
+
+    # decide how much the balance and deposits would grow in the time
+    if len(monthly_balance_result.monthly_balances) == 0:
+        # can't interpolate from nothing
+        return
+    elif len(monthly_balance_result.monthly_balances) == 1:
+        end_balance = get_interpolated_monthly_balance(
+            monthly_balance_result.monthly_balances[-1],
+            now_year_month,
+            api_models.InterpolationType.end,
+        )
+    else:
+        end_balance = get_interpolated_balance_predict_growth(
+            monthly_balance_result.monthly_balances, now_year_month, account.account_type
+        )
+
+    monthly_balance_result.end_year_month = now_year_month
+    monthly_balance_result.monthly_balances.append(end_balance)
+
+
 def fill_missing_months(
-    monthly_balances: List[api_models.MonthlyBalance],
+    account: api_models.Account,
+    monthly_balance_result: api_models.MonthlyBalanceResult,
 ) -> List[api_models.MonthlyBalance]:
-    if not monthly_balances:
-        return monthly_balances
+    if not monthly_balance_result.monthly_balances:
+        return
 
     def next_year_month(year_month: str) -> str:
         year, month = map(int, year_month.split("-"))
@@ -221,25 +272,138 @@ def fill_missing_months(
             year += 1
         return f"{year:04d}-{month:02d}"
 
+    monthly_balances = monthly_balance_result.monthly_balances
+
     results = [monthly_balances.pop(0)]
 
     while monthly_balances:
-        while monthly_balances and monthly_balances[0].year_month != next_year_month(
-            results[-1].year_month
-        ):
-            results.append(
-                api_models.MonthlyBalance(
-                    year_month=next_year_month(results[-1].year_month),
-                    start_balance=results[-1].end_balance,
-                    monthly_balance=Decimal(0),
-                    end_balance=results[-1].end_balance,
-                    deposits_to_date=results[-1].deposits_to_date,
-                )
-            )
-        if monthly_balances:
-            results.append(monthly_balances.pop(0))
+        gap_size = get_num_months_between(
+            results[-1].year_month,
+            monthly_balances[0].year_month,
+        )
+        # if monthly_balances[0].year_month != next_year_month(results[-1].year_month):
 
-    return results
+        if gap_size > 1:
+            monthly_balance = Decimal(0)
+            monthly_deposit = Decimal(0)
+
+            if account.default_ingest_type == api_models.IngestType.value_and_contrib_csv:
+                cur_balance = results[-1].end_balance
+                target_deposits = (
+                    monthly_balances[0].deposits_to_date - results[-1].deposits_to_date
+                )
+                monthly_deposit = Decimal(target_deposits / gap_size)
+                req_value_change = monthly_balances[0].end_balance - target_deposits - cur_balance
+                monthly_balance = Decimal(req_value_change / gap_size)
+                logger.info(
+                    f"{cur_balance=}, {target_deposits=}, {monthly_deposit=}, {req_value_change=}"
+                )
+
+            logger.info(
+                f"Account {account.id} Gap filling {gap_size=} for {results[-1].year_month}, {monthly_balance=}, {monthly_deposit=}"
+            )
+            for _ in range(gap_size - 1):
+                results.append(
+                    get_interpolated_monthly_balance(
+                        results[-1],
+                        next_year_month(results[-1].year_month),
+                        api_models.InterpolationType.inter,
+                        monthly_balance,
+                        monthly_deposit,
+                    )
+                )
+        results.append(monthly_balances.pop(0))
+
+    monthly_balance_result.monthly_balances = results
+
+
+def get_interpolated_monthly_balance(
+    prev: api_models.MonthlyBalance,
+    year_month: str,
+    interpolated: api_models.InterpolationType,
+    monthly_balance: Decimal = Decimal(0),
+    monthly_deposit: Decimal = Decimal(0),
+) -> api_models.MonthlyBalance:
+    return api_models.MonthlyBalance(
+        year_month=year_month,
+        start_balance=prev.end_balance,
+        monthly_balance=monthly_balance,
+        end_balance=prev.end_balance + monthly_balance,
+        deposits_to_date=prev.deposits_to_date + monthly_deposit,
+        interpolated=interpolated,
+    )
+
+
+def get_num_months_between(start_month_year: str, end_month_year: str) -> int:
+    start_year, start_month = map(int, start_month_year.split("-"))
+    end_year, end_month = map(int, end_month_year.split("-"))
+    result = (end_year - start_year) * 12 + (
+        end_month - start_month
+    )  # 2024-01 to 2024-02 is 1 month
+    # logger.info(f"Months between {start_month_year=} and {end_month_year=} is {result=}")
+    return result
+
+
+def get_interpolated_balance_predict_growth(
+    monthly_balances: List[api_models.MonthlyBalance],
+    now_year_month: str,
+    account_type: api_models.AcType,
+) -> api_models.MonthlyBalance:
+
+    # data needed for all approaches
+    first_entry = monthly_balances[0]
+    last_entry = monthly_balances[-1]
+    months_from_last_data = get_num_months_between(last_entry.year_month, now_year_month)
+
+    total_growth = Decimal(0)
+    new_deposits = Decimal(0)
+
+    # assets: diff between first and last valuation divided by months. No predicted deposits.
+    if account_type == api_models.AcType.asset:
+
+        months_between = get_num_months_between(first_entry.year_month, last_entry.year_month)
+        growth = last_entry.end_balance - first_entry.end_balance
+        growth_per_month = growth / months_between
+        total_growth = Decimal(growth_per_month * months_from_last_data)
+
+        logger.info(
+            f"{months_from_last_data=}, {months_between=}, {growth=}, {growth_per_month=}, {total_growth=}"
+        )
+    else:
+        recent_growth = []
+        for i in range(len(monthly_balances) - 1, 0, -1):
+            deposit_this_month = (
+                monthly_balances[i].deposits_to_date - monthly_balances[i - 1].deposits_to_date
+            )
+            growth_this_month = (
+                monthly_balances[i].end_balance - deposit_this_month
+            ) / monthly_balances[i - 1].end_balance
+            recent_growth.append(growth_this_month)
+            if len(recent_growth) >= 12:
+                break
+        ave_growth = statistics.mean(recent_growth)
+        # use the last entry to determine if contributions are still being made
+        contribs_per_month = (
+            monthly_balances[-1].deposits_to_date - monthly_balances[-2].deposits_to_date
+        )
+
+        logger.info(f"{months_from_last_data=}, {ave_growth=}, {contribs_per_month=}")
+
+        cur_balance = last_entry.end_balance
+        for _ in range(months_from_last_data):
+            total_growth += (cur_balance * ave_growth) - cur_balance
+            new_deposits += contribs_per_month
+            cur_balance += total_growth
+            logger.info(f"{total_growth=}, {new_deposits=}, {cur_balance=}")
+
+    return api_models.MonthlyBalance(
+        year_month=now_year_month,
+        start_balance=last_entry.end_balance,
+        monthly_balance=total_growth,
+        end_balance=last_entry.end_balance + total_growth,
+        deposits_to_date=last_entry.deposits_to_date + new_deposits,
+        interpolated=api_models.InterpolationType.end,
+    )
 
 
 # todo split this file up

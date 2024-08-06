@@ -14,12 +14,16 @@
     <v-row>
       <v-col>
         <v-card flat title="Taxable Income" color="primary" variant="tonal">
-          <StackedBarChart :data="taxableIncomeSeries as ChartData<'bar'>" />
+          <v-card-item>
+            <StackedBarChart :data="taxableIncomeSeries as ChartData<'bar'>" />
+          </v-card-item>
         </v-card>
       </v-col>
       <v-col>
         <v-card flat title="Salary" color="secondary" variant="tonal">
-          <StackedBarChart :data="salarySeries as ChartData<'bar'>" />
+          <v-card-item>
+            <StackedBarChart :data="salarySeries as ChartData<'bar'>" />
+          </v-card-item>
         </v-card>
       </v-col>
     </v-row>

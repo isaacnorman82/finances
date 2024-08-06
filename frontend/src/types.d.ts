@@ -22,6 +22,8 @@ export type IngestType =
   | "moneyFarmCsv"
   | "ofxTransactions";
 
+export type InterpolationType = "none" | "inter" | "end";
+
 export interface AccountCreate {
   institution: string;
   name: string;
@@ -81,6 +83,7 @@ export interface MonthlyBalance {
   monthlyBalance: string;
   endBalance: string;
   depositsToDate: string;
+  interpolated: InterpolationType;
 }
 
 export interface MonthlyBalanceResult {

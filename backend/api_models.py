@@ -16,6 +16,7 @@ _orm_config = ConfigDict(from_attributes=True, extra="forbid")
 
 
 # todo simplify? maybe just monthly ones (current/cc) savings and pensions? or have another mapping for that?
+# todo rename to AccountType?
 class AcType(StrEnum):
     current_account = auto()
     asset = auto()
@@ -36,6 +37,12 @@ class IngestType(StrEnum):
     csv = auto()
     value_and_contrib_csv = auto()
     ofx_transactions = auto()
+
+
+class InterpolationType(StrEnum):
+    none = auto()
+    inter = auto()
+    end = auto()
 
 
 # class RuleConditionID(StrEnum):
@@ -138,6 +145,7 @@ class MonthlyBalance(BaseModel):
     monthly_balance: Decimal
     end_balance: Decimal
     deposits_to_date: Decimal
+    interpolated: InterpolationType = InterpolationType.none
 
 
 class MonthlyBalanceResult(BaseModel):

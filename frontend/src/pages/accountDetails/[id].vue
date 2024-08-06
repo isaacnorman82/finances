@@ -234,7 +234,7 @@
   } from "@/utils";
   import { useRoute } from "vue-router";
 
-  const graphTimescale = ref<Timescale>(Timescale.OneYear);
+  const graphTimescale = ref<Timescale>(Timescale.All);
   const search = ref("");
 
   const route = useRoute("/accountDetails/[id]");
@@ -329,7 +329,7 @@
       {
         title: "Accounts",
         disabled: false,
-        to: "accounts",
+        to: "/accounts",
       },
       {
         title:
