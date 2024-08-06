@@ -101,6 +101,8 @@
             fill: false,
             spanGaps: true,
             borderColor: "rgba(72, 168, 166, 1)",
+            pointRadius: balanceData.length > 60 ? 0 : 3, // Hide points if more than 60 data points
+            pointHitRadius: 5,
           },
           ...(JSON.stringify(balanceData) !== JSON.stringify(depositsData)
             ? [
@@ -110,6 +112,8 @@
                   fill: false,
                   spanGaps: true,
                   borderColor: "rgba(24, 102, 192, 1)",
+                  pointRadius: balanceData.length > 60 ? 0 : 3, // Hide points if more than 60 data points
+                  pointHitRadius: 5,
                 },
               ]
             : []),
