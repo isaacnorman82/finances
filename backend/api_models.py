@@ -17,19 +17,23 @@ _orm_config = ConfigDict(from_attributes=True, extra="forbid")
 
 # todo simplify? maybe just monthly ones (current/cc) savings and pensions? or have another mapping for that?
 # todo rename to AccountType?
-class AcType(StrEnum):
-    current_account = auto()
-    asset = auto()
-    cash_isa = auto()
-    credit_card = auto()
-    if_isa = auto()
-    junior_isa = auto()
-    loan = auto()
-    mortgage = auto()
-    pension = auto()
-    savings_account = auto()
-    share_isa = auto()
-    stockbroker = auto()
+class AccountType(StrEnum):
+    current_credit = "Current/Credit"
+    asset = "Asset"
+    savings = "Savings"
+    loans = "Loan"
+    pensions = "Pension"
+
+    # cash_isa = auto()
+    # credit_card = auto()
+    # if_isa = auto()
+    # junior_isa = auto()
+    # loan = auto()
+    # mortgage = auto()
+    # pension = auto()
+    # savings_account = auto()
+    # share_isa = auto()
+    # stockbroker = auto()
 
 
 class IngestType(StrEnum):
@@ -53,7 +57,7 @@ class InterpolationType(StrEnum):
 class AccountCreate(BaseModel):
     institution: str
     name: str
-    account_type: AcType
+    account_type: AccountType
     default_ingest_type: IngestType = IngestType.csv
     is_active: bool = True
     description: Optional[str] = None

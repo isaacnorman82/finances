@@ -14,7 +14,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
-from backend.api_models import AcType, IngestType
+from backend.api_models import AccountType, IngestType
 from backend.db import Base
 
 ReqCol = partial(Column, nullable=False)
@@ -27,7 +27,7 @@ class Account(Base):
 
     # required fields
     name = ReqCol(String, index=True)
-    account_type = ReqCol(Enum(AcType), index=True)
+    account_type = ReqCol(Enum(AccountType), index=True)
     institution = ReqCol(String, index=True)
     is_active = ReqCol(Boolean, default=True)
     default_ingest_type: IngestType = ReqCol(Enum(IngestType))

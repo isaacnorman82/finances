@@ -347,7 +347,7 @@ def get_num_months_between(start_month_year: str, end_month_year: str) -> int:
 def get_interpolated_balance_predict_growth(
     monthly_balances: List[api_models.MonthlyBalance],
     now_year_month: str,
-    account_type: api_models.AcType,
+    account_type: api_models.AccountType,
 ) -> api_models.MonthlyBalance:
 
     # data needed for all approaches
@@ -359,7 +359,7 @@ def get_interpolated_balance_predict_growth(
     new_deposits = Decimal(0)
 
     # assets: diff between first and last valuation divided by months. No predicted deposits.
-    if account_type == api_models.AcType.asset:
+    if account_type == api_models.AccountType.asset:
 
         months_between = get_num_months_between(first_entry.year_month, last_entry.year_month)
         growth = last_entry.end_balance - first_entry.end_balance

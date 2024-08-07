@@ -1,8 +1,8 @@
 """Initial migration
 
-Revision ID: 58a23063c86b
+Revision ID: c92ab66621a5
 Revises: 
-Create Date: 2024-08-03 16:45:09.311157
+Create Date: 2024-08-07 17:29:41.396715
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '58a23063c86b'
+revision: str = 'c92ab66621a5'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -23,7 +23,7 @@ def upgrade() -> None:
     op.create_table('accounts',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
-    sa.Column('account_type', sa.Enum('current_account', 'asset', 'cash_isa', 'credit_card', 'if_isa', 'junior_isa', 'loan', 'mortgage', 'pension', 'savings_account', 'share_isa', 'stockbroker', name='actype'), nullable=False),
+    sa.Column('account_type', sa.Enum('current_credit', 'asset', 'savings', 'loans', 'pensions', name='accounttype'), nullable=False),
     sa.Column('institution', sa.String(), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('default_ingest_type', sa.Enum('crowd_property_csv', 'csv', 'value_and_contrib_csv', 'ofx_transactions', name='ingesttype'), nullable=False),
