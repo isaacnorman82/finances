@@ -71,7 +71,7 @@
           variant="tonal"
         >
           <v-card-item class="flex-grow-1">
-            <WealthPieChart class="flex-grow-1" />
+            <WealthPieChart :group-by-account-type="true" class="flex-grow-1" />
           </v-card-item>
         </v-card>
       </v-col>

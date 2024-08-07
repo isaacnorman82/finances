@@ -25,9 +25,11 @@
   // Register necessary chart components
   Chart.register(ArcElement, Tooltip, Legend, Title);
 
-  //   interface Props {}
+  interface Props {
+    groupByAccountType: boolean;
+  }
 
-  //   const props = defineProps<Props>();
+  const props = defineProps<Props>();
 
   const accountSummariesStore = useAccountSummariesStore();
   const accountSummaries = computed<AccountSummary[]>(
@@ -52,22 +54,42 @@
       })
       .filter((summary) => summary.account.isActive == true);
 
-    // Labels are account names
-    const labels: string[] = accountBalances.map(
-      (summary) => summary.account.name
-    );
+    let labels: string[] = [];
+    let data: number[] = [];
+    let backgroundColors: string[] = [];
 
-    // Data for the bar chart
-    const data: number[] = accountBalances.map((val) => val.balance);
+    if (props.groupByAccountType) {
+      const groupedByAccountType: { [key: string]: number } = {};
 
-    // Colors for each bar
-    const backgroundColors = accountBalances.map((account) =>
-      getSeededColor(account.account.id)
-    );
+      accountBalances.forEach((summary) => {
+        const accountType = summary.account.accountType;
+        if (!groupedByAccountType[accountType]) {
+          groupedByAccountType[accountType] = 0;
+        }
+        groupedByAccountType[accountType] += summary.balance;
+      });
+
+      labels = Object.keys(groupedByAccountType);
+      data = Object.values(groupedByAccountType);
+      backgroundColors = labels.map((accountType) =>
+        getSeededColor(accountType)
+      );
+    } else {
+      // Labels are account names
+      labels = accountBalances.map((summary) => summary.account.name);
+
+      // Data for the pie chart
+      data = accountBalances.map((val) => val.balance);
+
+      // Colors for each slice
+      backgroundColors = accountBalances.map((account) =>
+        getSeededColor(account.account.id)
+      );
+    }
 
     const datasets = [
       {
-        label: "Account Balances",
+        label: "Balance",
         backgroundColor: backgroundColors,
         data,
       },
@@ -82,17 +104,8 @@
   const chartOptions = ref<ChartOptions<"pie">>({
     responsive: true,
     maintainAspectRatio: false,
-    scales: {
-      x: {
-        display: false,
-      },
-      y: {
-        display: false,
-      },
-    },
     plugins: {
       legend: {
-        display: true,
         position: "right",
       },
       tooltip: {
@@ -116,7 +129,3 @@
     },
   });
 </script>
-
-<style scoped>
-  /* Add any component-specific styles here */
-</style>
