@@ -48,11 +48,40 @@
         />
       </v-col>
     </v-row>
+    <v-row>
+      <v-col>
+        <v-card
+          flat
+          class="fill-height d-flex flex-column"
+          title="Balance"
+          color="primary"
+          variant="tonal"
+        >
+          <v-card-item class="flex-grow-1">
+            <TotalBalanceLineChart class="flex-grow-1" />
+          </v-card-item>
+        </v-card>
+      </v-col>
+      <v-col>
+        <v-card
+          flat
+          class="fill-height d-flex flex-column"
+          title="Wealth"
+          color="secondary"
+          variant="tonal"
+        >
+          <v-card-item class="flex-grow-1">
+            <WealthPieChart class="flex-grow-1" />
+          </v-card-item>
+        </v-card>
+      </v-col>
+    </v-row>
   </v-container>
 </template>
 
 <script setup lang="ts">
   import StackedBarChart from "@/components/StackedBarChart.vue";
+  import TotalBalanceLineChart from "@/components/TotalBalanceLineChart.vue";
   import { useAccountSummariesStore } from "@/stores/accountSummaries";
   import type { AccountSummary } from "@/types.d.ts";
   import {
