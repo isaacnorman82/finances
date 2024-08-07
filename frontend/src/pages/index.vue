@@ -42,14 +42,6 @@
     </v-row>
     <v-row>
       <v-col>
-        <StackedBarChart
-          :data="chartData"
-          @chartClick="navigateToAccountDetails"
-        />
-      </v-col>
-    </v-row>
-    <v-row>
-      <v-col>
         <v-card flat title="Balance" color="primary" variant="tonal">
           <v-card-item>
             <TotalBalanceLineChart />
@@ -61,6 +53,22 @@
           <v-card-item>
             <WealthPieChart :group-by-account-type="true" />
           </v-card-item>
+        </v-card>
+      </v-col>
+    </v-row>
+    <v-row>
+      <v-col>
+        <v-card
+          flat
+          title="History"
+          color="blue-grey-lighten-2"
+          variant="tonal"
+        >
+          <v-card-item>
+            <StackedBarChart
+              :data="chartData"
+              @chartClick="navigateToAccountDetails"
+          /></v-card-item>
         </v-card>
       </v-col>
     </v-row>
