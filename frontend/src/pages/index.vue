@@ -50,28 +50,16 @@
     </v-row>
     <v-row>
       <v-col>
-        <v-card
-          flat
-          class="fill-height d-flex flex-column"
-          title="Balance"
-          color="primary"
-          variant="tonal"
-        >
-          <v-card-item class="flex-grow-1">
-            <TotalBalanceLineChart class="flex-grow-1" />
+        <v-card flat title="Balance" color="primary" variant="tonal">
+          <v-card-item>
+            <TotalBalanceLineChart />
           </v-card-item>
         </v-card>
       </v-col>
       <v-col>
-        <v-card
-          flat
-          class="fill-height d-flex flex-column"
-          title="Wealth"
-          color="secondary"
-          variant="tonal"
-        >
-          <v-card-item class="flex-grow-1">
-            <WealthPieChart :group-by-account-type="true" class="flex-grow-1" />
+        <v-card flat title="Wealth" color="secondary" variant="tonal">
+          <v-card-item>
+            <WealthPieChart :group-by-account-type="true" />
           </v-card-item>
         </v-card>
       </v-col>

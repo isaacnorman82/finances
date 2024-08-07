@@ -1,5 +1,6 @@
 <template>
   <Pie
+    class="chart-container"
     v-if="chartData.labels?.length"
     :data="chartData"
     :options="chartOptions"
@@ -129,3 +130,19 @@
     },
   });
 </script>
+
+<style scoped>
+  .chart-container {
+    position: relative;
+    width: 100%;
+    height: 270px;
+  }
+
+  .chart-container canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    height: 100% !important;
+  }
+</style>
