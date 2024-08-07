@@ -8,8 +8,7 @@
 </template>
 
 <script setup lang="ts">
-  import { useAccountSummariesStore } from "@/stores/accountSummaries";
-  import { AccountSummary } from "@/types.d";
+  import { AccountSummary, Timescale } from "@/types.d";
   import {
     CategoryScale,
     Chart,
@@ -36,17 +35,21 @@
     Filler
   );
 
-  //   interface Props {}
+  interface Props {
+    accountSummaries: AccountSummary[];
+    timescale: Timescale;
+  }
 
-  //   const props = defineProps<Props>();
+  const props = defineProps<Props>();
 
-  const accountSummariesStore = useAccountSummariesStore();
-  const accountSummaries = computed<AccountSummary[]>(
-    () => accountSummariesStore.accountSummaries
-  );
+  //   const accountSummariesStore = useAccountSummariesStore();
+  //   const accountSummaries = computed<AccountSummary[]>(
+  //     () => accountSummariesStore.accountSummaries
+  //   );
 
   const chartData = computed<ChartData<"line">>(() => {
-    if (accountSummaries.value.length === 0) {
+    const summaries = props.accountSummaries;
+    if (summaries.length === 0) {
       return {
         labels: [],
         datasets: [],
@@ -55,7 +58,7 @@
 
     // Extract all unique labels from all accounts
     const uniqueDates = new Set<string>();
-    accountSummaries.value.forEach((summary) => {
+    summaries.forEach((summary) => {
       summary.monthlyBalances.monthlyBalances.forEach((mb) => {
         uniqueDates.add(mb.yearMonth);
       });
@@ -65,7 +68,7 @@
 
     // Calculate the total balance for each month
     const totalBalances = labels.map((label) => {
-      return accountSummaries.value.reduce((sum, summary) => {
+      return summaries.reduce((sum, summary) => {
         const monthlyBalance = summary.monthlyBalances.monthlyBalances.find(
           (mb) => mb.yearMonth === label
         );
@@ -74,6 +77,13 @@
         );
       }, 0);
     });
+
+    // Filter data based on the selected timescale
+    if (props.timescale !== Timescale.All) {
+      const startIndex = Math.max(labels.length - props.timescale, 0);
+      labels.splice(0, startIndex);
+      totalBalances.splice(0, startIndex);
+    }
 
     // Create a single dataset for the line graph
     const datasets = [

@@ -12,46 +12,36 @@
       </v-col>
     </v-row>
     <v-row>
-      <v-col>
-        <v-data-table
-          :headers="tableHeaders"
-          hide-default-footer
-          :items="tableData"
-        >
-          <template v-slot:item="{ item }">
-            <tr style="cursor: pointer" @click="navigateToAccount(item)">
-              <td>{{ item.institution }}</td>
-              <td>{{ item.name }}</td>
-              <td v-html="formatBalance(item.balance)" />
-
-              <td>{{ item.lastTransactionDate }}</td>
-            </tr>
-          </template>
-          <template v-slot:body.append>
-            <tr>
-              <td colspan="2" style="text-align: right; font-weight: bold">
-                Total Amount:
-              </td>
-              <td>
-                {{ formatBalance(totalBalance) }}
-              </td>
-            </tr>
-          </template>
-        </v-data-table>
+      <v-col
+        ><v-toolbar color="white" density="compact">
+          <v-spacer />
+          <timescale-toggle
+            v-model="graphTimescale"
+            density="default"
+            variant="text"
+          />
+          <account-type-toggle v-model="accountTypes" class="ml-4" />
+        </v-toolbar>
       </v-col>
     </v-row>
     <v-row>
       <v-col>
         <v-card flat title="Balance" color="primary" variant="tonal">
           <v-card-item>
-            <TotalBalanceLineChart />
+            <TotalBalanceLineChart
+              :accountSummaries="filteredAccountSummaries"
+              :timescale="graphTimescale"
+            />
           </v-card-item>
         </v-card>
       </v-col>
       <v-col>
         <v-card flat title="Wealth" color="secondary" variant="tonal">
           <v-card-item>
-            <WealthPieChart :group-by-account-type="true" />
+            <WealthPieChart
+              :group-by-account-type="true"
+              :accountSummaries="filteredAccountSummaries"
+            />
           </v-card-item>
         </v-card>
       </v-col>
@@ -67,6 +57,7 @@
           <v-card-item>
             <StackedBarChart
               :data="chartData"
+              :timescale="graphTimescale"
               @chartClick="navigateToAccountDetails"
           /></v-card-item>
         </v-card>
@@ -79,23 +70,35 @@
   import StackedBarChart from "@/components/StackedBarChart.vue";
   import TotalBalanceLineChart from "@/components/TotalBalanceLineChart.vue";
   import { useAccountSummariesStore } from "@/stores/accountSummaries";
-  import type { AccountSummary } from "@/types.d.ts";
+  import { AccountSummary, Timescale } from "@/types.d";
   import {
+    filterAccountSummaries,
     findAccountSummaryFromLabel,
-    formatBalance,
-    formatHeaderText,
-    formatLastTransactionDate,
     getSeededColor,
   } from "@/utils";
   import { ChartData } from "chart.js";
-  import { computed, ref } from "vue";
+  import { computed } from "vue";
+
+  const accountTypes = ref<string[]>([
+    "Current/Credit",
+    "Savings",
+    "Asset",
+    "Loan",
+    "Pension",
+    "isClosed",
+  ]);
 
   const accountSummariesStore = useAccountSummariesStore();
   const accountSummaries = computed<AccountSummary[]>(
     () => accountSummariesStore.accountSummaries
   );
 
-  const hideClosed = ref<boolean>(true);
+  const filteredAccountSummaries = computed<AccountSummary[]>(() => {
+    return filterAccountSummaries(accountSummaries.value, accountTypes.value);
+  });
+
+  const graphTimescale = ref<Timescale>(Timescale.All);
+
   const router = useRouter();
 
   const breadcrumbs = computed(() => {
@@ -105,27 +108,6 @@
         disabled: false,
       },
     ];
-  });
-
-  const filteredSummaries = computed(() => {
-    return accountSummaries.value.filter((summary) => {
-      if (hideClosed.value && !summary.account.isActive) {
-        return false;
-      }
-      return true;
-    });
-  });
-
-  const tableData = computed(() => {
-    return filteredSummaries.value.map((summary) => ({
-      id: summary.account.id,
-      institution: summary.account.institution,
-      name: summary.account.name,
-      balance: summary.balance,
-      lastTransactionDate: formatLastTransactionDate(
-        summary.lastTransactionDate
-      ),
-    }));
   });
 
   const navigateToAccountDetails = ({
@@ -145,31 +127,10 @@
     }
   };
 
-  function navigateToAccount(item: any) {
-    router.push({ path: `/accountDetails/${item.id}` });
-  }
-
-  const totalBalance = computed(() => {
-    return accountSummaries.value.reduce((total, accountSummary) => {
-      return total + parseFloat(accountSummary.balance);
-    }, 0);
-  });
-
-  const tableHeaders = computed(() => {
-    if (tableData.value.length === 0) return [];
-
-    // Generate headers based on the keys of the first item in tableData
-    const keys = Object.keys(tableData.value[0])
-      .filter((key) => key !== "id")
-      .map((key) => ({
-        title: formatHeaderText(key),
-        key,
-      }));
-    return keys;
-  });
-
   const chartData = computed<ChartData<"bar">>(() => {
-    if (accountSummaries.value.length === 0) {
+    let summaries = filteredAccountSummaries.value;
+
+    if (summaries.length === 0) {
       return {
         labels: [],
         datasets: [],
@@ -178,7 +139,7 @@
 
     // Extract all unique labels from all accounts
     const uniqueDates = new Set<string>();
-    accountSummaries.value.forEach((summary) => {
+    summaries.forEach((summary) => {
       summary.monthlyBalances.monthlyBalances.forEach((mb) => {
         uniqueDates.add(mb.yearMonth);
       });
@@ -186,8 +147,15 @@
 
     const labels = Array.from(uniqueDates).sort();
 
+    // Filter data based on the selected timescale
+    if (graphTimescale.value !== Timescale.All) {
+      const monthsToShow = graphTimescale.value;
+      const startIndex = Math.max(labels.length - monthsToShow, 0);
+      labels.splice(0, startIndex);
+    }
+
     // Create datasets for each account, aligning data with the unique dates
-    const datasets = accountSummaries.value.map((summary) => {
+    const datasets = summaries.map((summary) => {
       const data = labels.map((label) => {
         const monthlyBalance = summary.monthlyBalances.monthlyBalances.find(
           (mb) => mb.yearMonth === label

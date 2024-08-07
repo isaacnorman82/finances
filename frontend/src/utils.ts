@@ -249,3 +249,20 @@ export function formatHeaderText(text: string): string {
     .replace(/([a-z0-9])([A-Z])/g, "$1 $2") // Add space before uppercase letters
     .replace(/^./, (str) => str.toUpperCase()); // Capitalize the first letter
 }
+
+export function filterAccountSummaries(
+  accountSummaries: AccountSummary[],
+  accountTypes: string[]
+): AccountSummary[] {
+  const includesClosed = accountTypes.includes("isClosed");
+
+  // First filter based on isActive status
+  const activeFilteredAccounts = accountSummaries.filter((summary) => {
+    return includesClosed || summary.account.isActive;
+  });
+
+  // Then filter based on account types
+  return activeFilteredAccounts.filter((summary) => {
+    return accountTypes.includes(summary.account.accountType);
+  });
+}

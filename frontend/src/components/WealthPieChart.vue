@@ -8,7 +8,6 @@
 </template>
 
 <script setup lang="ts">
-  import { useAccountSummariesStore } from "@/stores/accountSummaries";
   import { AccountSummary } from "@/types.d";
   import { getSeededColor } from "@/utils";
   import {
@@ -28,17 +27,19 @@
 
   interface Props {
     groupByAccountType: boolean;
+    accountSummaries: AccountSummary[];
   }
 
   const props = defineProps<Props>();
 
-  const accountSummariesStore = useAccountSummariesStore();
-  const accountSummaries = computed<AccountSummary[]>(
-    () => accountSummariesStore.accountSummaries
-  );
+  //   const accountSummariesStore = useAccountSummariesStore();
+  //   const accountSummaries = computed<AccountSummary[]>(
+  //     () => accountSummariesStore.accountSummaries
+  //   );
 
   const chartData = computed<ChartData<"pie">>(() => {
-    if (accountSummaries.value.length === 0) {
+    const summaries = props.accountSummaries;
+    if (summaries.length === 0) {
       return {
         labels: [],
         datasets: [],
@@ -46,7 +47,7 @@
     }
 
     // Extract the latest balance for each account with a non-zero balance
-    const accountBalances = accountSummaries.value
+    const accountBalances = summaries
       .map((summary) => {
         return {
           account: summary.account,

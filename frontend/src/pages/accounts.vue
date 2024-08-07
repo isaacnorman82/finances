@@ -23,15 +23,7 @@
             single-line
             variant="outlined"
           />
-          <!-- <v-btn-toggle v-model="accountTypes" multiple>
-            <v-btn icon="mdi-credit-card-outline" value="Current/Credit" />
-            <v-btn icon="mdi-piggy-bank-outline" value="Savings" />
-            <v-btn icon="mdi-home-outline" value="Asset" />
-            <v-btn icon="mdi-cash-clock" value="Pension" />
-            <v-btn icon="mdi-hand-extended-outline" value="Loan" />
-            <v-btn icon="mdi-cash-off" value="inactive" />
-          </v-btn-toggle> -->
-          <account-type-toggle v-model="accountTypes" />
+          <account-type-toggle v-model="accountTypes" class="ml-4" />
         </v-toolbar>
         <div class="ma-10" align="center" v-if="!tableData.length">
           No accounts to show.
@@ -73,6 +65,7 @@
   import { useAccountSummariesStore } from "@/stores/accountSummaries";
   import type { AccountSummary } from "@/types.d.ts";
   import {
+    filterAccountSummaries,
     formatBalance,
     formatHeaderText,
     formatLastTransactionDate,
@@ -89,17 +82,7 @@
   );
 
   const filteredAccountSummaries = computed<AccountSummary[]>(() => {
-    const includesInactive = accountTypes.value.includes("inactive");
-
-    // First filter based on isActive status
-    const activeFilteredAccounts = accountSummaries.value.filter((summary) => {
-      return includesInactive || summary.account.isActive;
-    });
-
-    // Then filter based on account types
-    return activeFilteredAccounts.filter((summary) => {
-      return accountTypes.value.includes(summary.account.accountType);
-    });
+    return filterAccountSummaries(accountSummaries.value, accountTypes.value);
   });
 
   const tableData = computed(() => {

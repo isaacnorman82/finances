@@ -15,6 +15,7 @@ declare module 'vue' {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     StackedBarChart: typeof import('./components/StackedBarChart.vue')['default']
+    TimescaleToggle: typeof import('./components/TimescaleToggle.vue')['default']
     TotalBalanceLineChart: typeof import('./components/TotalBalanceLineChart.vue')['default']
     WealthPieChart: typeof import('./components/WealthPieChart.vue')['default']
   }

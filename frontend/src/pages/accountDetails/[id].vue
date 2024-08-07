@@ -119,19 +119,11 @@
           </v-card-item>
           <v-card-actions>
             <v-spacer />
-            <v-btn-toggle
+            <timescale-toggle
               v-model="graphTimescale"
-              color="primary"
               density="compact"
-              mandatory
               variant="plain"
-            >
-              <v-btn text="6M" :value="Timescale.SixMonths" />
-              <v-btn text="1Y" :value="Timescale.OneYear" />
-              <v-btn text="2Y" :value="Timescale.TwoYears" />
-              <v-btn text="5Y" :value="Timescale.FiveYears" />
-              <v-btn text="ALL" :value="Timescale.All" />
-            </v-btn-toggle>
+            />
           </v-card-actions>
         </v-card>
       </v-col>
