@@ -13,11 +13,36 @@
     </v-row>
     <v-row>
       <v-col>
+        <v-toolbar color="white" density="compact">
+          <v-text-field
+            v-model="search"
+            density="compact"
+            hide-details
+            label="Search"
+            prepend-inner-icon="mdi-magnify"
+            single-line
+            variant="outlined"
+          />
+          <!-- <v-btn-toggle v-model="accountTypes" multiple>
+            <v-btn icon="mdi-credit-card-outline" value="Current/Credit" />
+            <v-btn icon="mdi-piggy-bank-outline" value="Savings" />
+            <v-btn icon="mdi-home-outline" value="Asset" />
+            <v-btn icon="mdi-cash-clock" value="Pension" />
+            <v-btn icon="mdi-hand-extended-outline" value="Loan" />
+            <v-btn icon="mdi-cash-off" value="inactive" />
+          </v-btn-toggle> -->
+          <account-type-toggle v-model="accountTypes" />
+        </v-toolbar>
+        <div class="ma-10" align="center" v-if="!tableData.length">
+          No accounts to show.
+        </div>
         <v-data-table
+          v-else
           :headers="tableHeaders"
           hide-default-footer
           :items="tableData"
           :items-per-page="tableData.length"
+          :search="search"
         >
           <template v-slot:item="{ item }">
             <tr style="cursor: pointer" @click="navigateToAccount(item)">
@@ -53,6 +78,9 @@
     formatLastTransactionDate,
   } from "@/utils";
 
+  const search = ref("");
+  const accountTypes = ref<string[]>(["Current/Credit", "Savings"]);
+
   const router = useRouter();
   const accountSummariesStore = useAccountSummariesStore();
 
@@ -60,8 +88,22 @@
     () => accountSummariesStore.accountSummaries
   );
 
+  const filteredAccountSummaries = computed<AccountSummary[]>(() => {
+    const includesInactive = accountTypes.value.includes("inactive");
+
+    // First filter based on isActive status
+    const activeFilteredAccounts = accountSummaries.value.filter((summary) => {
+      return includesInactive || summary.account.isActive;
+    });
+
+    // Then filter based on account types
+    return activeFilteredAccounts.filter((summary) => {
+      return accountTypes.value.includes(summary.account.accountType);
+    });
+  });
+
   const tableData = computed(() => {
-    return accountSummaries.value.map((summary) => ({
+    return filteredAccountSummaries.value.map((summary) => ({
       id: summary.account.id,
       institution: summary.account.institution,
       name: summary.account.name,
@@ -99,8 +141,9 @@
   }
 
   //todo this function is in both this file and index.vue and should prob use the items in the table in case of filtering
+  // also it should be in the table and based on items so it inherits the filtering
   const totalBalance = computed(() => {
-    return accountSummaries.value.reduce((total, accountSummary) => {
+    return filteredAccountSummaries.value.reduce((total, accountSummary) => {
       return total + parseFloat(accountSummary.balance);
     }, 0);
   });

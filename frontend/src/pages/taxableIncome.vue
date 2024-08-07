@@ -27,10 +27,26 @@
         </v-card>
       </v-col>
     </v-row>
+    <v-row>
+      <v-col class="mt-4">
+        <v-timeline direction="horizontal" density="compact">
+          <v-timeline-item
+            v-for="(company, index) in companies"
+            :key="company.name"
+            :dot-color="getDotColor(index)"
+            side="top"
+          >
+            <div>{{ company.date }} - {{ company.name }}</div>
+          </v-timeline-item>
+        </v-timeline>
+      </v-col>
+    </v-row>
   </v-container>
 </template>
 
 <script setup lang="ts">
+  import { useDataSeriesStore } from "@/stores/dataSeries";
+  import { DataSeries } from "@/types";
   import { dataSeriesToChartData, formatMonthYear } from "@/utils";
   import { ChartData } from "chart.js";
 
@@ -55,6 +71,21 @@
       formatMonthYear
     );
   });
+
+  const companies = computed(() => {
+    const dataSeriesStore = useDataSeriesStore();
+    const companiesDS = dataSeriesStore.getDataSeries("Company");
+    return companiesDS.map((dataseries: DataSeries) => {
+      return {
+        name: dataseries.value,
+        date: new Date(dataseries.dateTime).getFullYear(),
+      };
+    });
+  });
+
+  const getDotColor = (index: number) => {
+    return index % 2 === 0 ? "primary" : "secondary";
+  };
 </script>
 
 <style scoped></style>

@@ -8,6 +8,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AccountLineChart: typeof import('./components/AccountLineChart.vue')['default']
+    AccountTypeToggle: typeof import('./components/AccountTypeToggle.vue')['default']
     AppFooter: typeof import('./components/AppFooter.vue')['default']
     BalanceSparkline: typeof import('./components/BalanceSparkline.vue')['default']
     HelloWorld: typeof import('./components/HelloWorld.vue')['default']
