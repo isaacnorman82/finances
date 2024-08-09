@@ -29,7 +29,7 @@ def extend_monthly_balances_to_now(account: Account, result: MonthlyBalanceResul
 
     latest_balance: MonthlyBalance = result.monthly_balances[-1]
     additional_balance: Decimal = Decimal(0)
-    additional_deposits: Decimal = latest_balance.deposits_to_date
+    additional_deposits: Decimal = Decimal(0)
     if account.account_type in ACCOUNT_TYPES_WITH_GROWTH:
         mean_growth_factor, median_monthly_deposit = calculate_growth_factor_for_account(
             result.monthly_balances
