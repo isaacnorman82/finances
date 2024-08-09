@@ -5,11 +5,19 @@ import { startOfMonth, subMonths } from "date-fns";
 import { useDataSeriesStore } from "./stores/dataSeries";
 
 export function formatBalance(balance: string | number): string {
-  // console.log("Formatting balance", balance);
   if (balance === undefined) return "Error";
+
   const numericBalance =
     typeof balance === "string" ? parseFloat(balance) : balance;
-  const formattedBalance = `£${Math.abs(numericBalance).toFixed(2)}`;
+
+  if (isNaN(numericBalance)) return "Error";
+
+  const formattedBalance = numericBalance.toLocaleString("en-GB", {
+    style: "currency",
+    currency: "GBP",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 
   if (numericBalance < 0) {
     return `<span style="color: red">${formattedBalance}</span>`;
@@ -111,11 +119,56 @@ export function calculateBalanceChange(
   return formattedChange;
 }
 
+export function sumMonthlyBalances(
+  accountSummaries: AccountSummary[],
+  timescale: Timescale
+): string {
+  const now = new Date();
+  const endYearMonth = `${now.getFullYear()}-${String(
+    now.getMonth() + 1
+  ).padStart(2, "0")}`;
+
+  // Calculate startYearMonth based on the timescale
+  let startYearMonth: string;
+  if (timescale === Timescale.All) {
+    startYearMonth = "0000-00"; // effectively no limit
+  } else {
+    const startDate = new Date(now);
+    startDate.setMonth(now.getMonth() - timescale);
+    startYearMonth = `${startDate.getFullYear()}-${String(
+      startDate.getMonth() + 1
+    ).padStart(2, "0")}`;
+  }
+
+  let totalBalance = 0;
+
+  accountSummaries.forEach((summary) => {
+    summary.monthlyBalances.monthlyBalances.forEach((balance) => {
+      if (
+        balance.yearMonth >= startYearMonth &&
+        balance.yearMonth <= endYearMonth
+      ) {
+        totalBalance += parseFloat(balance.monthlyBalance);
+      }
+    });
+  });
+  return totalBalance.toFixed(2);
+}
+
+export function sumAccountBalances(accountSummaries: AccountSummary[]): string {
+  let totalBalance = 0;
+
+  accountSummaries.forEach((summary) => {
+    totalBalance += parseFloat(summary.balance);
+  });
+
+  return totalBalance.toFixed(2);
+}
+
 export function getBalanceForDate(
   accountSummary: AccountSummary,
   date: MonthYear
 ): MonthlyBalance | null {
-  // Example function implementation
   const yearMonth = `${date.year}-${date.month.toString().padStart(2, "0")}`;
   return (
     accountSummary.monthlyBalances.monthlyBalances.find(

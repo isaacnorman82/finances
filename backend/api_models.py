@@ -7,33 +7,38 @@ from decimal import ROUND_HALF_UP, Decimal
 from enum import StrEnum, auto
 from typing import List, Literal, Optional, Union
 
-from fastapi import HTTPException, status
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    FieldValidationInfo,
+    computed_field,
+    field_validator,
+)
 
 logger = logging.getLogger(__name__)
 
 _orm_config = ConfigDict(from_attributes=True, extra="forbid")
 
 
-# todo simplify? maybe just monthly ones (current/cc) savings and pensions? or have another mapping for that?
-# todo rename to AccountType?
+def validate_decimal_places(
+    value: Decimal, field_name: str, model_name: str, decimal_places: int = 2
+) -> Decimal:
+    # Validator function to check if a Decimal value has more than `decimal_places` places.
+    quantized_value = value.quantize(Decimal("1." + "0" * decimal_places), rounding=ROUND_HALF_UP)
+    if value != quantized_value:
+        raise ValueError(
+            f'{model_name}: The field "{field_name}" has more than {decimal_places} decimal places. '
+            f"Given value: {value}"
+        )
+    return value
+
+
 class AccountType(StrEnum):
     current_credit = "Current/Credit"
     asset = "Asset"
     savings = "Savings"
     loans = "Loan"
     pensions = "Pension"
-
-    # cash_isa = auto()
-    # credit_card = auto()
-    # if_isa = auto()
-    # junior_isa = auto()
-    # loan = auto()
-    # mortgage = auto()
-    # pension = auto()
-    # savings_account = auto()
-    # share_isa = auto()
-    # stockbroker = auto()
 
 
 class IngestType(StrEnum):
@@ -47,11 +52,6 @@ class InterpolationType(StrEnum):
     none = auto()
     inter = auto()
     end = auto()
-
-
-# class RuleConditionID(StrEnum):
-#     base = "base"
-#     contains_any = "contains_any"
 
 
 class AccountCreate(BaseModel):
@@ -117,9 +117,13 @@ class TransactionCreate(BaseModel):
     notes: Optional[str] = None
     is_value_adjustment: Optional[bool] = False
 
-    @field_validator("amount", mode="before")
-    def validate_and_round_amount(cls, value):
-        return Decimal(str(value)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    # @field_validator("amount", mode="before")
+    # def validate_and_round_amount(cls, value):
+    #     return Decimal(str(value)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    @field_validator("amount", mode="after")
+    def validate_dp(cls, value: Decimal) -> Decimal:
+        return validate_decimal_places(value, "amount", cls.__name__)
 
 
 class Transaction(TransactionCreate):
@@ -142,28 +146,64 @@ class BalanceResult(BaseModel):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
 
+    @field_validator("balance", mode="after")
+    def validate_dp(cls, value: Decimal) -> Decimal:
+        return validate_decimal_places(value, "balance", cls.__name__)
+
 
 class MonthlyBalance(BaseModel):
     year_month: str
     start_balance: Decimal
-    monthly_balance: Decimal
+    monthly_balance: Decimal  # todo make property and rename to balance
     end_balance: Decimal
     deposits_to_date: Decimal
     interpolated: InterpolationType = InterpolationType.none
 
+    @field_validator("start_balance", mode="after")
+    def validate_dp_sb(cls, value: Decimal) -> Decimal:
+        return validate_decimal_places(value, "start_balance", cls.__name__)
+
+    @field_validator("monthly_balance", mode="after")
+    def validate_dp_mb(cls, value: Decimal) -> Decimal:
+        return validate_decimal_places(value, "monthly_balance", cls.__name__)
+
+    @field_validator("end_balance", mode="after")
+    def validate_dp_eb(cls, value: Decimal) -> Decimal:
+        return validate_decimal_places(value, "end_balance", cls.__name__)
+
+    @field_validator("deposits_to_date", mode="after")
+    def validate_dp_dtd(cls, value: Decimal) -> Decimal:
+        return validate_decimal_places(value, "deposits_to_date", cls.__name__)
+
 
 class MonthlyBalanceResult(BaseModel):
-    account_id: int
+    account_id: int  # todo be nice to remove this
     monthly_balances: List[MonthlyBalance]
-    start_year_month: str
-    end_year_month: str
+    # start_year_month: str  # todo what if there are no transactions?
+    # end_year_month: str
+
+    @computed_field
+    @property
+    def start_year_month(self) -> str:
+        # todo test with accounts with no transactions
+        return self.monthly_balances[0].year_month
+
+    @computed_field
+    @property
+    def end_year_month(self) -> str:
+        return self.monthly_balances[-1].year_month
 
 
 class AccountSummary(BaseModel):
     account: Account
-    balance: Decimal
+    # balance: Decimal
     monthly_balances: MonthlyBalanceResult
     last_transaction_date: Optional[datetime] = None
+
+    @computed_field
+    @property
+    def balance(self) -> Decimal:
+        return self.monthly_balances.monthly_balances[-1].end_balance
 
 
 class DataSeriesCreate(BaseModel):

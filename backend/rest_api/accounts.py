@@ -101,7 +101,6 @@ def api_get_accounts_summary(db_session: Session = Depends(get_db_session)):
         results.append(
             api_models.AccountSummary(
                 account=account,
-                balance=balance_result.balance,
                 monthly_balances=monthly_balance_result,
                 last_transaction_date=balance_result.last_transaction_date,
             )

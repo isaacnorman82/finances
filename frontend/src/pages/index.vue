@@ -26,7 +26,15 @@
     </v-row>
     <v-row>
       <v-col>
-        <v-card flat title="Balance" color="primary" variant="tonal">
+        <v-card flat color="primary" variant="tonal">
+          <v-card-title class="d-flex justify-space-between">
+            <span>Balance</span>
+            <span class="text-right">{{
+              formatBalance(
+                sumMonthlyBalances(filteredAccountSummaries, graphTimescale)
+              )
+            }}</span>
+          </v-card-title>
           <v-card-item>
             <TotalBalanceLineChart
               :accountSummaries="filteredAccountSummaries"
@@ -36,7 +44,13 @@
         </v-card>
       </v-col>
       <v-col>
-        <v-card flat title="Wealth" color="secondary" variant="tonal">
+        <v-card flat color="secondary" variant="tonal">
+          <v-card-title class="d-flex justify-space-between">
+            <span>Wealth</span>
+            <span class="text-right">{{
+              formatBalance(sumAccountBalances(filteredAccountSummaries))
+            }}</span>
+          </v-card-title>
           <v-card-item>
             <WealthPieChart
               :group-by-account-type="true"
@@ -74,7 +88,10 @@
   import {
     filterAccountSummaries,
     findAccountSummaryFromLabel,
+    formatBalance,
     getSeededColor,
+    sumAccountBalances,
+    sumMonthlyBalances,
   } from "@/utils";
   import { ChartData } from "chart.js";
   import { computed } from "vue";
