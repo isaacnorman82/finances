@@ -24,6 +24,9 @@ def account_id_list_from_str(account_ids: Optional[str] = Query(None)) -> Option
 )
 def api_get_monthly_account_balance(
     account_ids: Optional[List[int]] = Depends(account_id_list_from_str),
+    interpolate: bool = True,
     db_session: Session = Depends(get_db_session),
 ):
-    return crud.get_monthly_balances(db_session=db_session, account_ids=account_ids)
+    return crud.get_monthly_balances(
+        db_session=db_session, account_ids=account_ids, interpolate=interpolate
+    )

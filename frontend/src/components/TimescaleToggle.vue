@@ -6,11 +6,11 @@
     mandatory
     :variant="variant"
   >
-    <v-btn text="6M" :value="Timescale.SixMonths" />
-    <v-btn text="1Y" :value="Timescale.OneYear" />
-    <v-btn text="2Y" :value="Timescale.TwoYears" />
-    <v-btn text="5Y" :value="Timescale.FiveYears" />
-    <v-btn text="ALL" :value="Timescale.All" />
+    <v-btn text="6M" :value="Timescale.SixMonths" class="compact-btn" />
+    <v-btn text="1Y" :value="Timescale.OneYear" class="compact-btn" />
+    <v-btn text="2Y" :value="Timescale.TwoYears" class="compact-btn" />
+    <v-btn text="5Y" :value="Timescale.FiveYears" class="compact-btn" />
+    <v-btn text="ALL" :value="Timescale.All" class="compact-btn" />
   </v-btn-toggle>
 </template>
 
@@ -39,3 +39,11 @@
     emit("update:modelValue", newValue);
   });
 </script>
+
+<style scoped>
+  .compact-btn {
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+    min-width: 48px !important;
+  }
+</style>

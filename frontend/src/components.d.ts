@@ -12,6 +12,7 @@ declare module 'vue' {
     AppFooter: typeof import('./components/AppFooter.vue')['default']
     BalanceSparkline: typeof import('./components/BalanceSparkline.vue')['default']
     HelloWorld: typeof import('./components/HelloWorld.vue')['default']
+    InterpolateToggle: typeof import('./components/InterpolateToggle.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     StackedBarChart: typeof import('./components/StackedBarChart.vue')['default']

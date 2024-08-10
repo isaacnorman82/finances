@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 from decimal import Decimal
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 from dateutil import parser
 from fastapi import APIRouter, Depends, HTTPException, Path, UploadFile, status
@@ -76,13 +76,17 @@ def api_get_accounts(
     summary="Get a summary of all account data",
     response_model=List[api_models.AccountSummary],
 )
-def api_get_accounts_summary(db_session: Session = Depends(get_db_session)):
-    logger.info("Getting account summary")
+def api_get_accounts_summary(
+    interpolate: bool = True, db_session: Session = Depends(get_db_session)
+):
+    logger.info(f"Getting account summary, {interpolate=}")
     accounts: List[api_models.Account] = crud.get_accounts(db_session=db_session)
     monthly_balance_results: List[api_models.MonthlyBalanceResult] = crud.get_monthly_balances(
+        db_session=db_session, interpolate=interpolate
+    )
+    last_transaction_dates: Dict[int, datetime] = crud.get_last_transaction_dates(
         db_session=db_session
     )
-    balance_results: List[api_models.BalanceResult] = crud.get_balance(db_session=db_session)
 
     results = []
     for account in accounts:
@@ -94,15 +98,12 @@ def api_get_accounts_summary(db_session: Session = Depends(get_db_session)):
                 if monthly_balance_result.account_id == account.id
             )
         )
-        balance_result = next(
-            result for result in balance_results if result.account_id == account.id
-        )
 
         results.append(
             api_models.AccountSummary(
                 account=account,
                 monthly_balances=monthly_balance_result,
-                last_transaction_date=balance_result.last_transaction_date,
+                last_transaction_date=last_transaction_dates.get(account.id, None),
             )
         )
 

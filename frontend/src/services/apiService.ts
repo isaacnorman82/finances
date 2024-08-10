@@ -177,10 +177,15 @@ export const getMonthlyBalances = async (
 
 /**
  * Get the summary of all accounts.
+ * @param interpolate - Optional flag to interpolate missing balances
  * @returns A promise that resolves to an array of account summaries
  */
-export const getAccountsSummary = async (): Promise<AccountSummary[]> => {
-  const response = await apiClient.get("/accounts/summary/");
+export const getAccountsSummary = async (
+  interpolate: boolean
+): Promise<AccountSummary[]> => {
+  const response = await apiClient.get(`/accounts/summary/`, {
+    params: { interpolate },
+  });
   return response.data;
 };
 

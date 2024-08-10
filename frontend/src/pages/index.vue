@@ -20,6 +20,7 @@
             density="default"
             variant="text"
           />
+          <interpolate-toggle v-model="interpolate" class="ml-4" />
           <account-type-toggle v-model="accountTypes" class="ml-4" />
         </v-toolbar>
       </v-col>
@@ -105,10 +106,16 @@
     "isClosed",
   ]);
 
+  const interpolate = ref<boolean>(true);
+
   const accountSummariesStore = useAccountSummariesStore();
-  const accountSummaries = computed<AccountSummary[]>(
-    () => accountSummariesStore.accountSummaries
-  );
+  const accountSummaries = computed<AccountSummary[]>(() => {
+    if (interpolate.value) {
+      return accountSummariesStore.accountSummaries;
+    } else {
+      return accountSummariesStore.nonInterpolatedAccountSummaries;
+    }
+  });
 
   const filteredAccountSummaries = computed<AccountSummary[]>(() => {
     return filterAccountSummaries(accountSummaries.value, accountTypes.value);

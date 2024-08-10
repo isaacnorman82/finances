@@ -118,11 +118,16 @@
             />
           </v-card-item>
           <v-card-actions>
+            <interpolate-toggle
+              v-model="interpolate"
+              density="compact"
+              class="ml-4"
+            />
             <v-spacer />
             <timescale-toggle
               v-model="graphTimescale"
               density="compact"
-              variant="plain"
+              variant="text"
             />
           </v-card-actions>
         </v-card>
@@ -232,9 +237,19 @@
   const route = useRoute("/accountDetails/[id]");
   const accountId: number = parseInt(route.params.id);
 
+  const interpolate = ref<boolean>(true);
+
   const accountSummariesStore = useAccountSummariesStore();
+  const accountSummaries = computed<AccountSummary[]>(() => {
+    if (interpolate.value) {
+      return accountSummariesStore.accountSummaries;
+    } else {
+      return accountSummariesStore.nonInterpolatedAccountSummaries;
+    }
+  });
+
   const accountSummary = computed<AccountSummary | undefined>(() => {
-    return accountSummariesStore.accountSummaries.find(
+    return accountSummaries.value.find(
       (summary) => summary.account.id === accountId
     );
   });

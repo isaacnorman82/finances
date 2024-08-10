@@ -2,17 +2,18 @@ import logging
 import statistics
 from datetime import datetime, timedelta
 from decimal import Decimal, getcontext
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 from fastapi import HTTPException, status
 from sqlalchemy import func, text
 from sqlalchemy.orm import Session
 
-from backend import api_models, db_models
+from backend import api_models, db_models, util
 from backend.balance_interpolation import (
     extend_monthly_balances_to_now,
     fill_missing_months,
 )
+from backend.util import Timer
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +80,22 @@ def get_transactions(
     return [api_models.Transaction.model_validate(result) for result in results]
 
 
+def get_last_transaction_dates(db_session: Session) -> Dict[int, datetime]:
+    # Query to get the last transaction date for each account_id
+    results = (
+        db_session.query(
+            db_models.Transaction.account_id, func.max(db_models.Transaction.date_time)
+        )
+        .group_by(db_models.Transaction.account_id)
+        .all()
+    )
+
+    # Convert the results to a dictionary
+    account_last_transaction_date = {account_id: last_date for account_id, last_date in results}
+
+    return account_last_transaction_date
+
+
 def get_balance(
     db_session: Session,
     account_ids: Optional[List[int]] = None,
@@ -139,7 +156,7 @@ def get_first_day_of_next_month(date: datetime) -> datetime:
 
 
 def get_monthly_balances(
-    db_session: Session, account_ids: Optional[List[int]] = None
+    db_session: Session, account_ids: Optional[List[int]] = None, interpolate: bool = True
 ) -> List[api_models.MonthlyBalanceResult]:
 
     # Prepare the SQL text query
@@ -170,10 +187,14 @@ def get_monthly_balances(
 
     sql_query = sql_query.format(where_clause=where_clause)
 
+    # Timer.start("Getting data from DB")
+
     # Execute the SQL query
     result = db_session.execute(
         text(sql_query), {"account_ids": tuple(account_ids)} if account_ids else {}
     ).fetchall()
+
+    # Timer.start("Processing results")
 
     # Process results
     results = {}
@@ -212,19 +233,21 @@ def get_monthly_balances(
     # Get the account objects
     accounts = get_accounts(db_session)
 
-    # Fill in the missing months where there were no transactions
-    for account_id, result in results.items():
+    if interpolate:
+        # Fill in the missing months where there were no transactions
+        for account_id, result in results.items():
 
-        # Add a final value to the current date for accounts we don't have up to date data for
-        account = next(account for account in accounts if account.id == account_id)
-        extend_monthly_balances_to_now(account, result)
+            # Add a final value to the current date for accounts we don't have up to date data for
+            account = next(account for account in accounts if account.id == account_id)
+            extend_monthly_balances_to_now(account, result)
 
-        # Gap fill to ensure we have data for all months up to the current month
-        fill_missing_months(account, result)
+            # Gap fill to ensure we have data for all months up to the current month
+            fill_missing_months(account, result)
 
     # Sort by earliest start date
     results = dict(sorted(results.items(), key=lambda item: item[1].start_year_month))
 
+    # Timer.stop(logger)
     return list(results.values())
 
 

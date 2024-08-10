@@ -41,9 +41,9 @@ def extend_monthly_balances_to_now(account: Account, result: MonthlyBalanceResul
         )
         additional_balance = target_end_balance - latest_balance.end_balance
         additional_deposits = median_monthly_deposit * months
-        logger.info(
-            f"Extending {account.id} - {account.name}: {months=},{mean_growth_factor=}, {median_monthly_deposit=}, {target_end_balance=}"
-        )
+        # logger.info(
+        #     f"Extending {account.id} - {account.name}: {months=},{mean_growth_factor=}, {median_monthly_deposit=}, {target_end_balance=}"
+        # )
 
     result.monthly_balances.append(
         create_interpolated_mb(
@@ -77,7 +77,7 @@ def fill_gap_in_non_growth_account(
     next_mb.start_balance = updated_balances[-1].end_balance
     next_mb.monthly_balance = next_mb.end_balance - next_mb.start_balance
     next_mb.deposits_to_date = updated_balances[-1].deposits_to_date
-    logging.info(f"Basic gap fill completed.")
+    # logging.info(f"Basic gap fill completed.")
 
 
 def fill_gap_in_growth_account(
@@ -122,7 +122,7 @@ def fill_gap_in_growth_account(
     next_mb.monthly_balance = next_mb.end_balance - next_mb.start_balance
     next_mb.deposits_to_date = updated_balances[-1].deposits_to_date
 
-    logging.info(f"Gap fill completed {growth_factor=} {monthly_deposit=}")
+    # logging.info(f"Gap fill completed {growth_factor=} {monthly_deposit=}")
 
 
 def fill_missing_months(account: Account, result: MonthlyBalanceResult):
@@ -140,9 +140,9 @@ def fill_missing_months(account: Account, result: MonthlyBalanceResult):
         gap_months = get_num_months_between(current_mb.year_month, next_mb.year_month)
 
         if gap_months > 1:
-            logging.info(
-                f"Filling Gap in Account {account.id} - {account.name} of {gap_months} months between {current_mb.year_month} and {next_mb.year_month}"
-            )
+            # logging.info(
+            #     f"Filling Gap in Account {account.id} - {account.name} of {gap_months} months between {current_mb.year_month} and {next_mb.year_month}"
+            # )
             if account.account_type in ACCOUNT_TYPES_WITH_GROWTH:
                 fill_gap_in_growth_account(current_mb, next_mb, gap_months, updated_balances)
             else:
