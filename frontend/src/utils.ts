@@ -1,4 +1,4 @@
-import type { AccountSummary, MonthlyBalance } from "@/types.d";
+import type { AccountSummary, AcType, MonthlyBalance } from "@/types.d";
 import { MonthYear, Timescale } from "@/types.d";
 import { ChartData } from "chart.js";
 import { startOfMonth, subMonths } from "date-fns";
@@ -318,4 +318,21 @@ export function filterAccountSummaries(
   return activeFilteredAccounts.filter((summary) => {
     return accountTypes.includes(summary.account.accountType);
   });
+}
+
+export function getAccountTypeIcon(accountType: AcType): string {
+  switch (accountType) {
+    case "Current/Credit":
+      return "mdi-credit-card-outline";
+    case "Savings":
+      return "mdi-piggy-bank-outline";
+    case "Asset":
+      return "mdi-home-outline";
+    case "Pension":
+      return "mdi-cash-clock";
+    case "Loan":
+      return "mdi-hand-extended-outline";
+    default:
+      return "mdi-help-circle-outline"; // Fallback icon if account type is unknown
+  }
 }

@@ -39,6 +39,9 @@
         >
           <template v-slot:item="{ item }">
             <tr style="cursor: pointer" @click="navigateToAccount(item)">
+              <td>
+                <v-icon>{{ item.type }}</v-icon>
+              </td>
               <td>{{ item.institution }}</td>
               <td>{{ item.name }}</td>
               <td v-html="formatBalance(item.balance)" />
@@ -70,6 +73,7 @@
     formatBalance,
     formatHeaderText,
     formatLastTransactionDate,
+    getAccountTypeIcon,
   } from "@/utils";
 
   const search = ref("");
@@ -92,6 +96,7 @@
 
   const tableData = computed(() => {
     return filteredAccountSummaries.value.map((summary) => ({
+      type: getAccountTypeIcon(summary.account.accountType),
       id: summary.account.id,
       institution: summary.account.institution,
       name: summary.account.name,

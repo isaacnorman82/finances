@@ -10,12 +10,19 @@
   <v-container fluid v-if="accountSummary && selectedMonthlyBalance">
     <v-row>
       <v-col>
-        <v-breadcrumbs :items="breadcrumbs" class="text-h5">
-          <template v-slot:item="{ item }">
-            <v-breadcrumbs-item :disabled="item.disabled" :to="item.to">
-              {{ item.title }}
-            </v-breadcrumbs-item>
-          </template>
+        <v-breadcrumbs class="text-h5">
+          <v-breadcrumbs-item to="/accounts"> Accounts </v-breadcrumbs-item>
+          <v-breadcrumbs-divider />
+          <v-breadcrumbs-item>
+            {{ accountSummary?.account.institution }} -
+            {{ accountSummary?.account.name }}
+            <v-icon
+              @click="toggleFavorite"
+              :class="isFavorite ? 'mdi mdi-star' : 'mdi mdi-star-outline'"
+              class="ml-2"
+              size="20"
+            ></v-icon>
+          </v-breadcrumbs-item>
         </v-breadcrumbs>
       </v-col>
     </v-row>
@@ -28,7 +35,14 @@
         >
           <v-card-text>
             <div>
-              <div class="text-overline mb-1">Details</div>
+              <div class="d-flex justify-space-between align-center">
+                <div class="text-overline mb-1">
+                  <span>Details</span>
+                </div>
+                <v-icon>{{
+                  getAccountTypeIcon(accountSummary.account.accountType)
+                }}</v-icon>
+              </div>
               <div class="text-h6">
                 {{ accountSummary.account.institution }}
                 {{ accountSummary.account.name }}
@@ -219,6 +233,7 @@
 
 <script setup lang="ts">
   import { useAccountSummariesStore } from "@/stores/accountSummaries";
+  import { useFavoriteAccountsStore } from "@/stores/favouriteAccounts";
   import { useTransactionsStore } from "@/stores/transactions";
   import type { AccountSummary, Transaction } from "@/types.d";
   import { MonthYear, Timescale } from "@/types.d";
@@ -227,6 +242,7 @@
     formatBalance,
     formatDate,
     formatLastTransactionDate,
+    getAccountTypeIcon,
     getBalanceForDate,
   } from "@/utils";
   import { useRoute } from "vue-router";
@@ -235,7 +251,7 @@
   const search = ref("");
 
   const route = useRoute("/accountDetails/[id]");
-  const accountId: number = parseInt(route.params.id);
+  const accountId = ref(parseInt(route.params.id));
 
   const interpolate = ref<boolean>(true);
 
@@ -250,9 +266,16 @@
 
   const accountSummary = computed<AccountSummary | undefined>(() => {
     return accountSummaries.value.find(
-      (summary) => summary.account.id === accountId
+      (summary) => summary.account.id === accountId.value
     );
   });
+
+  watch(
+    () => route.params.id,
+    (newId) => {
+      accountId.value = parseInt(newId);
+    }
+  );
 
   const transactionsStore = useTransactionsStore();
   const transactions = ref<Transaction[]>([]);
@@ -292,36 +315,16 @@
         );
       }
       transactions.value = await transactionsStore.fetchTransactions(
-        accountId,
+        accountId.value,
         selectedDate.value
       );
     },
     { immediate: true }
   );
 
-  // watch(
-  //   selectedDate,
-  //   async () => {
-  //     // ensure bounds still set
-  //     if (accountSummary.value) {
-  //       //todo should maybe have an error if not
-  //       selectedDate.value.setBounds(
-  //         accountSummary.value.monthlyBalances.startYearMonth,
-  //         accountSummary.value.monthlyBalances.endYearMonth
-  //       );
-  //     }
-  //     transactions.value = await transactionsStore.fetchTransactions(
-  //       accountId,
-  //       selectedDate.value
-  //     );
-  //   },
-  //   { immediate: true, deep: true }
-  // );
-
   const startMonth = computed(() => {
     if (!accountSummary.value) return null;
     const startYearMonth = accountSummary.value.monthlyBalances.startYearMonth;
-    // return new Date(`${startYearMonth}-01T00:00:00Z`);
     return new MonthYear(startYearMonth);
   });
 
@@ -331,22 +334,16 @@
     { title: "1 Year:", timescale: Timescale.OneYear },
   ]);
 
-  const breadcrumbs = computed(() => {
-    return [
-      {
-        title: "Accounts",
-        disabled: false,
-        to: "/accounts",
-      },
-      {
-        title:
-          accountSummary.value?.account.institution +
-          " - " +
-          accountSummary.value?.account.name,
-        disabled: false,
-      },
-    ];
-  });
+  const favoriteAccountsStore = useFavoriteAccountsStore();
+
+  const isFavorite = computed(() =>
+    favoriteAccountsStore.isFavAccount(accountId.value)
+  );
+
+  const toggleFavorite = () => {
+    const newValue = !isFavorite.value;
+    favoriteAccountsStore.setFavAccount(accountId.value, newValue);
+  };
 
   const tableHeaders = computed(() => {
     return [
@@ -375,10 +372,6 @@
 
   const selectedMonthlyBalance = computed(() => {
     if (accountSummary.value) {
-      // console.log(
-      //   "trying to get balance for date",
-      //   selectedDate.value.toString()
-      // );
       return getBalanceForDate(accountSummary.value, selectedDate.value);
     }
     return null;

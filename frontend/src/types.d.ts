@@ -3,18 +3,11 @@ import { format as formatDate } from "date-fns";
 export type AcBehaviour = "standard" | "crowdProperty";
 
 export type AcType =
-  | "currentAccount"
-  | "asset"
-  | "cashIsa"
-  | "creditCard"
-  | "ifIsa"
-  | "juniorIsa"
-  | "loan"
-  | "mortgage"
-  | "pension"
-  | "savingsAccount"
-  | "shareIsa"
-  | "stockbroker";
+  | "Current/Credit"
+  | "Asset"
+  | "Savings"
+  | "Loan"
+  | "Pension";
 
 export type IngestType =
   | "crowdPropertyCsv"

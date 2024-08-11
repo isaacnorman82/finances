@@ -14,6 +14,7 @@ import App from "./App.vue";
 import { useAccountSummariesStore } from "@/stores/accountSummaries";
 import { createApp } from "vue";
 import { useDataSeriesStore } from "./stores/dataSeries";
+import { useFavoriteAccountsStore } from "./stores/favouriteAccounts";
 
 const app = createApp(App);
 
@@ -26,3 +27,6 @@ accountSummariesStore.loadAccountSummaries();
 
 const dataSeriesStore = useDataSeriesStore();
 dataSeriesStore.loadDataSeries();
+
+const favoriteAccountsStore = useFavoriteAccountsStore();
+favoriteAccountsStore.loadFavoriteAccounts();

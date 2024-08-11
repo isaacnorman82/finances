@@ -1,41 +1,42 @@
 <template>
   <v-app app>
-    <!-- <v-app-bar app flat rounded>
-      <template v-slot:prepend>
-        <v-app-bar-nav-icon />
-      </template>
-
-      <v-app-bar-title>Application Bar</v-app-bar-title>
-    </v-app-bar> -->
     <v-navigation-drawer permanent expand-on-hover rail>
       <v-list>
-        <v-list-item subtitle="By Isaac Norman" title="Finances"
-          ><template #prepend>
+        <v-list-item subtitle="By Isaac Norman" title="Finances">
+          <template #prepend>
             <img
               src="/favicon.svg"
               style="height: 24px; width: 24px; margin-right: 32px"
-            /> </template
-        ></v-list-item>
+            />
+          </template>
+        </v-list-item>
       </v-list>
 
       <v-divider></v-divider>
 
       <v-list density="compact" nav>
-        <v-list-item
-          prepend-icon="mdi-finance"
-          title="Summary"
-          to="/"
-        ></v-list-item>
+        <v-list-item prepend-icon="mdi-finance" title="Summary" to="/" />
         <v-list-item
           prepend-icon="mdi-cash-multiple"
           title="Accounts"
           to="/accounts"
-        ></v-list-item>
+        />
         <v-list-item
           prepend-icon="mdi-hand-coin"
           title="Taxable Income"
           to="/taxableIncome"
-        ></v-list-item>
+        />
+      </v-list>
+
+      <v-divider></v-divider>
+      <v-list density="compact" nav>
+        <v-list-item
+          v-for="account in favoriteAccountsStore.getFavAccountObjects()"
+          :key="account.account.id"
+          :title="`${account.account.institution} - ${account.account.name}`"
+          :to="`/accountDetails/${account.account.id}`"
+          :prepend-icon="getAccountTypeIcon(account.account.accountType)"
+        />
       </v-list>
     </v-navigation-drawer>
     <v-main>
@@ -49,14 +50,10 @@
 <script setup lang="ts">
   // import { useAccountSummaries } from "@/stores/accountSummaries";
   import { onMounted } from "vue";
+  import { useFavoriteAccountsStore } from "./stores/favouriteAccounts";
+  import { getAccountTypeIcon } from "./utils";
 
-  // const accountSummariesStore = useAccountSummaries();
-
-  // onBeforeMount(async () => {
-  //   // console.log("onBeforeMount");
-  //   console.log("Loading account summaries");
-  //   await accountSummariesStore.loadAccountSummaries();
-  // });
+  const favoriteAccountsStore = useFavoriteAccountsStore();
 
   onMounted(() => {
     // Set the page title
