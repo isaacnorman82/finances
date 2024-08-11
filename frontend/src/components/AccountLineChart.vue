@@ -100,7 +100,7 @@
             data: balanceData,
             fill: false,
             spanGaps: true,
-            borderColor: "rgba(72, 168, 166, 1)",
+            borderColor: "#48A8A6",
             pointRadius: balanceData.length > 60 ? 0 : 3, // Hide points if more than 60 data points
             pointHitRadius: 5,
           },
@@ -111,7 +111,7 @@
                   data: depositsData,
                   fill: false,
                   spanGaps: true,
-                  borderColor: "rgba(24, 102, 192, 1)",
+                  borderColor: "#1866C0",
                   pointRadius: balanceData.length > 60 ? 0 : 3, // Hide points if more than 60 data points
                   pointHitRadius: 5,
                 },

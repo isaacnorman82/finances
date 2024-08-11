@@ -9,7 +9,7 @@
 
 <script setup lang="ts">
   import { AccountSummary } from "@/types.d";
-  import { getSeededColor } from "@/utils";
+  import { getAccountTypeColor, getSeededColor } from "@/utils";
   import {
     ArcElement,
     Chart,
@@ -74,7 +74,7 @@
       labels = Object.keys(groupedByAccountType);
       data = Object.values(groupedByAccountType);
       backgroundColors = labels.map((accountType) =>
-        getSeededColor(accountType)
+        getAccountTypeColor(accountType)
       );
     } else {
       // Labels are account names

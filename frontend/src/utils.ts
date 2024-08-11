@@ -235,6 +235,23 @@ export function getSeededColor(seed: number | string): string {
   return color;
 }
 
+export function getAccountTypeColor(accountType: string): string {
+  switch (accountType) {
+    case "Current/Credit":
+      return "#1866C0";
+    case "Savings":
+      return "#28a745";
+    case "Asset":
+      return "#80CBC4";
+    case "Pension":
+      return "#6f42c1";
+    case "Loan":
+      return "#dc3545";
+    default:
+      return "#17a2b8";
+  }
+}
+
 export function dataSeriesToChartData(
   keysOrColorMap: string[] | Record<string, string>,
   formatDate: (dateTime: string) => string = formatTaxYear
