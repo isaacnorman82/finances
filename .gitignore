@@ -159,5 +159,11 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
+# dev testing / ingest scripts
 ingest_data
 ingest_all.sh
+init_db.py
+reset_db.sh
+
+
+frontend_old
