@@ -122,13 +122,18 @@ def create_transactions(
     db_session.commit()
 
     if not as_db_model:
-        return [
+        new_transactions = [
             api_models.Transaction.model_validate(new_transaction)
             for new_transaction in new_transactions
         ]
 
     if len(new_transactions) == 1:
         new_transactions = new_transactions[0]
+
+    # make a list of all account_ids we've added transactions for
+    account_ids = list({transaction.account_id for transaction in new_transactions})
+    # todo switch uses of list to set where we're passing optional id sets.
+    run_rules(db_session, account_ids)
 
     return new_transactions
 
@@ -307,6 +312,22 @@ def get_monthly_balances(
 # todo split this file up
 
 
+def create_transaction_rules(
+    db_session: Session,
+    rules: Union[api_models.TransactionRuleCreate, List[api_models.TransactionRuleCreate]],
+):
+    if not isinstance(rules, list):
+        rules = [rules]
+
+    new_rules: List[db_models.TransactionRule] = [
+        db_models.TransactionRule(**rule.model_dump()) for rule in rules
+    ]
+    db_session.add_all(new_rules)
+    db_session.commit()
+
+    return status.HTTP_201_CREATED
+
+
 def get_transaction_rule(id: int, db_session: Session) -> api_models.TransactionRule:
     result = db_session.query(db_models.TransactionRule).get(id)
 
@@ -330,17 +351,23 @@ def get_rules(
 
     results = query.all()
 
-    if not results:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"No rules found for {account_ids=}"
-        )
+    # if not results:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_404_NOT_FOUND, detail=f"No rules found for {account_ids=}"
+    #     )
 
     if as_db_model:
         return results
     return [api_models.TransactionRule.model_validate(result) for result in results]
 
 
-def run_rules(db_session: Session, account_ids: Optional[List[int]] = None):
+# todo all these optional lists should be sets
+def run_rules(db_session: Session, account_ids: Optional[Union[int, List[int]]] = None):
+    logger.info(f"Running rules, {account_ids=}")
+
+    if account_ids is not None and not isinstance(account_ids, list):
+        account_ids = [account_ids]
+
     rules: List[api_models.TransactionRule] = get_rules(
         db_session=db_session, account_ids=account_ids
     )
@@ -362,8 +389,11 @@ def run_rules(db_session: Session, account_ids: Optional[List[int]] = None):
 
         db_session.commit()
     except Exception as e:
+        # logger.error(f"Error running rules: {e}")
         db_session.rollback()
         raise
+
+    # logger.info(f"Rules run.")
 
 
 def add_data_series(

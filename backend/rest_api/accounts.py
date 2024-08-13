@@ -180,6 +180,10 @@ def api_ingest_transactions(
         db_session=db_session,
     )
     logger.info(f"Ingest result: {result}")
+
+    if result.transactions_inserted > 0:
+        # todo run rules only on new transactions
+        crud.run_rules(db_session=db_session, account_ids=account.id)
     return result
 
 

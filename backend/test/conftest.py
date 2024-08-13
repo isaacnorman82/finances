@@ -16,6 +16,7 @@ from backend.db import Base, get_db_session
 from backend.main import app
 from backend.test.sample_data_utils import (
     create_sample_accounts,
+    create_sample_rules,
     create_sample_transactions,
 )
 
@@ -78,6 +79,11 @@ def sample_accounts():
 
 
 @pytest.fixture(scope="session")
+def sample_rules():
+    return create_sample_rules()
+
+
+@pytest.fixture(scope="session")
 def sample_transactions():
     return create_sample_transactions()
 
@@ -88,6 +94,7 @@ def insert_sample_accounts(db_session, sample_accounts):
 
 
 @pytest.fixture(scope="function")
-def insert_sample_accounts_and_transactions(db_session, sample_accounts, sample_transactions):
+def insert_sample_data(db_session, sample_accounts, sample_rules, sample_transactions):
     crud.create_accounts(db_session=db_session, accounts=sample_accounts)
+    crud.create_transaction_rules(db_session=db_session, rules=create_sample_rules)
     crud.create_transactions(db_session=db_session, transactions=sample_transactions)
