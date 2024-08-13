@@ -1,16 +1,17 @@
 from decimal import Decimal
-from test.conftest import BASE_URL
 
-import httpx
 import pytest
+from fastapi.testclient import TestClient
 
 from backend.api_models import AccountSummary
+from backend.main import app
+
+client = TestClient(app)
 
 
-@pytest.mark.asyncio
-async def test_account_summaries():
-    async with httpx.AsyncClient() as client:
-        response = await client.get(f"{BASE_URL}/api/accounts/summary/")
+@pytest.mark.usefixtures("insert_sample_accounts_and_transactions")
+def test_account_summaries():
+    response = client.get(f"/api/accounts/summary/")
     assert response.status_code == 200
 
     # convert summaries json to a list of AccountSummary objects

@@ -43,6 +43,31 @@ def get_accounts(
     return [api_models.Account.model_validate(result) for result in results]
 
 
+def create_accounts(
+    db_session: Session,
+    accounts: Union[api_models.Account, List[api_models.Account]],
+    as_db_model: bool = False,
+):
+    if not isinstance(accounts, list):
+        accounts = [accounts]
+
+    new_accounts: List[db_models.Account] = [
+        db_models.Account(**account.model_dump()) for account in accounts
+    ]
+    db_session.add_all(new_accounts)
+    db_session.commit()
+    for new_account in new_accounts:
+        db_session.refresh(new_account)
+
+    if not as_db_model:
+        return [api_models.Account.model_validate(new_account) for new_account in new_accounts]
+
+    if len(new_accounts) == 1:
+        new_accounts = new_accounts[0]
+
+    return new_accounts
+
+
 def get_transactions(
     db_session: Session,
     account_id: int,
@@ -78,6 +103,32 @@ def get_transactions(
     if as_db_model:
         return results
     return [api_models.Transaction.model_validate(result) for result in results]
+
+
+def create_transactions(
+    db_session: Session,
+    transactions: Union[api_models.Transaction, List[api_models.Transaction]],
+    as_db_model: bool = False,
+):
+    if not isinstance(transactions, list):
+        transactions = [transactions]
+
+    new_transactions: List[db_models.Transaction] = [
+        db_models.Transaction(**transaction.model_dump()) for transaction in transactions
+    ]
+    db_session.add_all(new_transactions)
+    db_session.commit()
+
+    if not as_db_model:
+        return [
+            api_models.Transaction.model_validate(new_transaction)
+            for new_transaction in new_transactions
+        ]
+
+    if len(new_transactions) == 1:
+        new_transactions = new_transactions[0]
+
+    return new_transactions
 
 
 def get_last_transaction_dates(db_session: Session) -> Dict[int, datetime]:
