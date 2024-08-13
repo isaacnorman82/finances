@@ -51,7 +51,7 @@
           </template>
           <template v-slot:body.append>
             <tr>
-              <td colspan="2" style="text-align: right; font-weight: bold">
+              <td colspan="3" style="text-align: right; font-weight: bold">
                 Total Amount:
               </td>
               <td>

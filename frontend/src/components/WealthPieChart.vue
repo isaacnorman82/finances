@@ -54,7 +54,8 @@
           balance: parseFloat(summary.balance),
         };
       })
-      .filter((summary) => summary.account.isActive == true);
+      .filter((summary) => summary.account.isActive == true)
+      .filter((summary) => summary.balance > 0);
 
     let labels: string[] = [];
     let data: number[] = [];

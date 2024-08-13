@@ -1,7 +1,5 @@
-# from contextlib import asynccontextmanager
 import logging
 import traceback
-from typing import Union
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -11,8 +9,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from backend import __version__, db_models
-from backend.db import engine
+from backend import __version__
 from backend.rest_api import get_api_router
 
 logging.basicConfig(
@@ -20,9 +17,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 logging.getLogger("ofxtools").setLevel(logging.ERROR)
-
-# create everything if not using alembic
-# db_models.Base.metadata.create_all(bind=engine)
 
 
 def _configure_app() -> FastAPI:

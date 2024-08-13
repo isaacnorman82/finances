@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import Dict, List, Optional, Union
 
 from dateutil import parser
-from fastapi import APIRouter, Depends, HTTPException, Path, UploadFile, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Path, UploadFile, status
 from sqlalchemy.orm import Session
 
 from backend import api_models, crud, db_models
@@ -133,20 +133,7 @@ def api_create_account(
     accounts: Union[api_models.AccountCreate, List[api_models.AccountCreate]],
     db_session: Session = Depends(get_db_session),
 ):
-    if not isinstance(accounts, list):
-        accounts = [accounts]
-
-    new_accounts: List[db_models.Account] = [
-        db_models.Account(**account.model_dump()) for account in accounts
-    ]
-    db_session.add_all(new_accounts)
-    db_session.commit()
-    for new_account in new_accounts:
-        db_session.refresh(new_account)
-
-    if len(new_accounts) == 1:
-        new_accounts = new_accounts[0]
-    return new_accounts
+    return crud.create_accounts(db_session=db_session, accounts=accounts)
 
 
 @router.get(
