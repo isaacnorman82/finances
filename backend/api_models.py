@@ -71,7 +71,7 @@ class Account(AccountCreate):
 
 
 class RuleCondition(BaseModel, ABC):
-    type_id: Literal["invalid"]
+    type_id: Literal["invalid"] = "invalid"
 
     class Config:
         use_enum_values = True
@@ -83,7 +83,7 @@ class RuleCondition(BaseModel, ABC):
 
 
 class IsValueAdjContainsAny(RuleCondition):
-    type_id: Literal["is_value_adj_contains_any"]
+    type_id: Literal["is_value_adj_contains_any"] = "is_value_adj_contains_any"
     values: List[str]
     read_col: str = "description"
 

@@ -13,7 +13,7 @@ from backend import __version__
 from backend.rest_api import get_api_router
 
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s:%(lineno)d -  %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 logging.getLogger("ofxtools").setLevel(logging.ERROR)

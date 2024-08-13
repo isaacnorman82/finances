@@ -31,13 +31,13 @@ def extend_monthly_balances_to_now(account: Account, result: MonthlyBalanceResul
     additional_balance: Decimal = Decimal(0)
     additional_deposits: Decimal = Decimal(0)
     if account.account_type in ACCOUNT_TYPES_WITH_GROWTH:
-        mean_growth_factor, median_monthly_deposit = calculate_growth_factor_for_account(
+        median_growth_factor, median_monthly_deposit = calculate_growth_factor_for_account(
             result.monthly_balances
         )
 
         months = get_num_months_between(latest_balance.year_month, now_year_month)
         target_end_balance: Decimal = calculate_balance_after_growth(
-            latest_balance.end_balance, mean_growth_factor, months
+            latest_balance.end_balance, median_growth_factor, months
         )
         additional_balance = target_end_balance - latest_balance.end_balance
         additional_deposits = median_monthly_deposit * months
@@ -216,10 +216,18 @@ def calculate_growth_factor_for_account(
         growth_factors.append(growth_factor)
         monthly_deposits.append(deposit_this_month)
 
-    mean_growth_factor = Decimal(mean(growth_factors))
-    median_monthly_deposit = Decimal(median(monthly_deposits))
+    median_growth_factor = Decimal(median(growth_factors))
 
-    return mean_growth_factor, median_monthly_deposit
+    if (
+        len(monthly_deposits) < (max_sample_size / 2)
+        or monthly_balances[0].deposits_to_date == monthly_balances[-1].deposits_to_date
+    ):
+        # if we don't have half the sample size or no proof deposits happened after the first month, set to zero
+        median_monthly_deposit = Decimal(0)
+    else:
+        median_monthly_deposit = Decimal(median(monthly_deposits))
+
+    return median_growth_factor, median_monthly_deposit
 
 
 def calculate_monthly_growth_factor(

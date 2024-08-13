@@ -11,7 +11,10 @@ from backend.api_models import (
     AccountType,
     DataSeriesCreate,
     IngestType,
+    IsValueAdjContainsAny,
+    RuleCondition,
     TransactionCreate,
+    TransactionRuleCreate,
 )
 
 
@@ -45,6 +48,13 @@ class AccountSpec(BaseModel):
     growth_factor_max: Decimal | None = None
     growth_factor_min: Decimal | None = None
     value: Decimal | None = Decimal("0.00")
+    conditions: List[RuleCondition] = []
+
+
+VALUE_AND_CONTRIB_CONDITION = IsValueAdjContainsAny(
+    values=["value adjustment"],
+    read_col="transaction_type",
+)
 
 
 ACCOUNT_SPECS = [
@@ -87,6 +97,7 @@ ACCOUNT_SPECS = [
         contributions=Decimal("658.00"),
         growth_factor_max=Decimal("1.006"),
         growth_factor_min=Decimal("0.999"),
+        conditions=[VALUE_AND_CONTRIB_CONDITION],
     ),
     AccountSpec(
         id=4,
@@ -100,6 +111,7 @@ ACCOUNT_SPECS = [
         growth_factor_max=Decimal("1.005"),
         growth_factor_min=Decimal("0.999"),
         value=Decimal("217000.00"),
+        conditions=[VALUE_AND_CONTRIB_CONDITION],
     ),
     AccountSpec(
         id=5,
@@ -126,6 +138,7 @@ ACCOUNT_SPECS = [
         contributions=Decimal("100.00"),
         growth_factor_max=Decimal("1.005"),
         growth_factor_min=Decimal("0.998"),
+        conditions=[VALUE_AND_CONTRIB_CONDITION],
     ),
 ]
 
@@ -177,6 +190,19 @@ def create_sample_accounts():
         )
         for spec in ACCOUNT_SPECS
     ]
+
+
+def create_sample_rules():
+    rules = []
+    for spec in ACCOUNT_SPECS:
+        for condition in spec.conditions:
+            rules.append(
+                TransactionRuleCreate(
+                    account_id=spec.id,
+                    condition=condition,
+                )
+            )
+    return rules
 
 
 def create_sample_transactions():
