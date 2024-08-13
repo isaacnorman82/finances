@@ -60,7 +60,9 @@ def create_accounts(
         db_session.refresh(new_account)
 
     if not as_db_model:
-        return [api_models.Account.model_validate(new_account) for new_account in new_accounts]
+        new_accounts = [
+            api_models.Account.model_validate(new_account) for new_account in new_accounts
+        ]
 
     if len(new_accounts) == 1:
         new_accounts = new_accounts[0]
