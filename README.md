@@ -78,8 +78,24 @@ DB: Dockerised Postgres
 
 # How do I run it?
 
-I will in future build both the front and backend and include in docker images, but for now:
+## Docker
+- check out the code
+- make sure you have docker
+- create a .env file in the base of the repo and put in
+```
+PGADMIN_DEFAULT_EMAIL=<email_addr>
+PGADMIN_DEFAULT_PASSWORD=<password>
+```
+- run
+```
+docker compose up --build -d
+```
+- go to:
+  - http://localhost:3000/ for the UI,
+  - http://localhost:8000/documentation for the REST Swagger UI
+  - http://localhost:8888/ for pgadmin (use the creds you made above to login then the db password is currently 'postgres')
 
+## Source
 - check out the code
 - create a python venv and install the requirements.txt
 - run the docker compose:

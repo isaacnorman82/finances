@@ -29,7 +29,7 @@ def unique_test_db_name(request):
 
 @pytest.fixture(scope="session")
 def db_engine(unique_test_db_name):
-    base_url = "postgresql://postgres:postgres@0.0.0.0/"
+    base_url = "postgresql://postgres:postgres@db/"
     test_db_url = f"{base_url}{unique_test_db_name}"
 
     if not database_exists(test_db_url):
