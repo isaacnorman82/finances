@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker
 
 logger = logging.getLogger(__name__)
 # todo switch to env var and direnv
-SQLALCHEMY_DATABASE_URL = "postgresql://postgres:postgres@0.0.0.0/postgres"
+SQLALCHEMY_DATABASE_URL = "postgresql://postgres:postgres@db/postgres"
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

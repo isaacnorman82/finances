@@ -28,7 +28,7 @@ export const useDataSeriesStore = defineStore("dataSeries", {
           if (this.dataSeriesCache[k]) {
             acc.push(...this.dataSeriesCache[k]);
           } else {
-            console.error(`Key "${k}" not found in the data series cache.`);
+            console.log(`Key "${k}" not found in the data series cache.`);
           }
           return acc;
         }, []);

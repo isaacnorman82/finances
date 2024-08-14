@@ -3,22 +3,57 @@ services:
     image: postgres:16.3-alpine3.20
     restart: always
     environment:
-      - POSTGRES_USER=postgres  # todo need different users for app/pgadmin/etc
+      - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
     ports:
       - '5432:5432'
     volumes:
       - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   pgadmin:
     image: dpage/pgadmin4:latest
     restart: always
     ports:
       - '8888:80'
     env_file:
+    # Create a .env and set both
+    # PGADMIN_DEFAULT_EMAIL=
+    # PGADMIN_DEFAULT_PASSWORD=
       - .env
-      # set PGADMIN_DEFAULT_EMAIL and PGADMIN_DEFAULT_PASSWORD
     volumes:
       - pgadmin-data:/var/lib/pgadmin
+      - ./pgadmin_servers.json:/pgadmin4/servers.json
+    depends_on:
+      db:
+        condition: service_healthy
+
+  backend:
+    build:
+      context: .
+      dockerfile: dockerfile.backend
+    ports:
+      - '8000:8000'
+    environment:
+      LOAD_SAMPLE_DATA: 'true'
+      # DATABASE_URL: ...  todo
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: dockerfile.frontend
+    ports:
+      - '3000:3000'
+    depends_on:
+      - backend
+
 volumes:
   db:
     driver: local

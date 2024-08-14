@@ -1,0 +1,36 @@
+# Use an official Python runtime as a parent image
+FROM python:3.11-slim
+
+# Install the PostgreSQL client and development headers
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set the working directory to /finances
+WORKDIR /finances
+
+ENV PYTHONPATH=/finances
+
+# Copy the requirements file into the container
+COPY backend/requirements.txt backend/requirements.txt
+
+# Install any needed packages specified in requirements.txt
+RUN pip install --no-cache-dir -r backend/requirements.txt
+
+# Copy the entire backend directory into /backend
+COPY backend/ backend/
+COPY alembic.ini alembic.ini
+copy load_sample_data.py load_sample_data.py
+
+# Expose the backend port
+EXPOSE 8000
+
+# Run the FastAPI app with uvicorn - but run alembic first
+# todo might want to do alembic separately, maybe as a docker compose service
+CMD ["sh", "-c", "alembic upgrade head && python load_sample_data.py && uvicorn backend.main:app --host 0.0.0.0 --port 8000"]
+# CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+
+
+
