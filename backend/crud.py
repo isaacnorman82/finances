@@ -213,6 +213,24 @@ def get_first_day_of_next_month(date: datetime) -> datetime:
     return next_month.replace(day=1)
 
 
+def get_account_ids_without_transactions(
+    db_session: Session, account_ids: Optional[List[int]] = None
+) -> List[int]:
+    query = (
+        db_session.query(db_models.Account.id)
+        .outerjoin(db_models.Transaction)
+        .filter(db_models.Transaction.id == None)
+    )
+
+    if account_ids:
+        query = query.filter(db_models.Account.id.in_(account_ids))
+
+    result = query.all()
+    account_ids_without_transactions = [row[0] for row in result]
+
+    return account_ids_without_transactions
+
+
 def get_monthly_balances(
     db_session: Session, account_ids: Optional[List[int]] = None, interpolate: bool = True
 ) -> List[api_models.MonthlyBalanceResult]:
@@ -301,6 +319,26 @@ def get_monthly_balances(
 
             # Gap fill to ensure we have data for all months up to the current month
             fill_missing_months(account, result)
+
+    # find accounts with no transactions
+    empty_accounts = get_account_ids_without_transactions(
+        db_session=db_session, account_ids=account_ids
+    )
+
+    for account_id in empty_accounts:
+        # add an empty monthly balance so we don't have make monthly_balances optional
+        results[account_id] = api_models.MonthlyBalanceResult(
+            account_id=account_id,
+            monthly_balances=[
+                api_models.MonthlyBalance(
+                    year_month=datetime.now().strftime("%Y-%m"),
+                    start_balance=Decimal(0),
+                    monthly_balance=Decimal(0),
+                    end_balance=Decimal(0),
+                    deposits_to_date=Decimal(0),
+                )
+            ],
+        )
 
     # Sort by earliest start date
     results = dict(sorted(results.items(), key=lambda item: item[1].start_year_month))

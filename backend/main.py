@@ -18,6 +18,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 logging.getLogger("ofxtools").setLevel(logging.ERROR)
 
+ALLOWED_ORIGIN = "http://localhost:3000"
+
 
 def _configure_app() -> FastAPI:
     version = f"v{__version__}"
@@ -48,18 +50,16 @@ def _configure_app() -> FastAPI:
     )
 
     app.include_router(get_api_router())
-    app.add_middleware(LoggingMiddleware)
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[
-            "http://localhost:8080",
-            "http://localhost:3000",
-        ],  # Allow requests from your Vue app's origin
+        allow_origins=[ALLOWED_ORIGIN],
         allow_credentials=True,
         allow_methods=["*"],  # Allow all methods
         allow_headers=["*"],  # Allow all headers
     )
+
+    app.add_middleware(LoggingMiddleware)
 
     return app
 
@@ -116,3 +116,14 @@ async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
             "detail": f"An internal server error occurred.  SQLAlchemyError - {exc.__class__.__name__}"
         },
     )
+
+
+@app.middleware("http")
+async def add_cors_headers(request: Request, call_next):
+    try:
+        response = await call_next(request)
+    except Exception as e:
+        response = JSONResponse(content={"detail": str(e)}, status_code=500)
+
+    response.headers["Access-Control-Allow-Origin"] = ALLOWED_ORIGIN
+    return response

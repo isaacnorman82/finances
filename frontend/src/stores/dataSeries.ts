@@ -21,26 +21,21 @@ export const useDataSeriesStore = defineStore("dataSeries", {
       }
     },
 
-    getDataSeries(key: string | string[]): DataSeries[] {
-      if (Array.isArray(key)) {
-        // If key is an array, concatenate the results for all keys
-        return key.reduce<DataSeries[]>((acc, k) => {
-          if (this.dataSeriesCache[k]) {
-            acc.push(...this.dataSeriesCache[k]);
-          } else {
-            console.log(`Key "${k}" not found in the data series cache.`);
-          }
-          return acc;
-        }, []);
-      } else {
-        // If key is a string, return data from cache if the key exists, else log an error and return an empty list
-        if (this.dataSeriesCache[key]) {
-          return this.dataSeriesCache[key];
-        } else {
-          console.error(`Key "${key}" not found in the data series cache.`);
-          return [];
-        }
+    getDataSeries(keys: string | string[]): DataSeries[] {
+      // Normalize keys to always be an array
+      if (!Array.isArray(keys)) {
+        keys = [keys];
       }
+
+      // Concatenate the results for all keys
+      return keys.reduce<DataSeries[]>((acc, key) => {
+        if (this.dataSeriesCache[key]) {
+          acc.push(...this.dataSeriesCache[key]);
+        } else {
+          console.log(`Key "${key}" not found in the data series cache.`);
+        }
+        return acc;
+      }, []);
     },
   },
 });
