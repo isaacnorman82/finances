@@ -31,19 +31,22 @@ def extend_monthly_balances_to_now(account: Account, result: MonthlyBalanceResul
     additional_balance: Decimal = Decimal(0)
     additional_deposits: Decimal = Decimal(0)
     if account.account_type in ACCOUNT_TYPES_WITH_GROWTH:
-        median_growth_factor, median_monthly_deposit = calculate_growth_factor_for_account(
-            result.monthly_balances
-        )
+        try:
+            median_growth_factor, median_monthly_deposit = calculate_growth_factor_for_account(
+                result.monthly_balances
+            )
 
-        months = get_num_months_between(latest_balance.year_month, now_year_month)
-        target_end_balance: Decimal = calculate_balance_after_growth(
-            latest_balance.end_balance, median_growth_factor, months
-        )
-        additional_balance = target_end_balance - latest_balance.end_balance
-        additional_deposits = median_monthly_deposit * months
-        # logger.info(
-        #     f"Extending {account.id} - {account.name}: {months=},{mean_growth_factor=}, {median_monthly_deposit=}, {target_end_balance=}"
-        # )
+            months = get_num_months_between(latest_balance.year_month, now_year_month)
+            target_end_balance: Decimal = calculate_balance_after_growth(
+                latest_balance.end_balance, median_growth_factor, months
+            )
+            additional_balance = target_end_balance - latest_balance.end_balance
+            additional_deposits = median_monthly_deposit * months
+            # logger.info(
+            #     f"Extending {account.id} - {account.name}: {months=},{median_growth_factor=}, {median_monthly_deposit=}, {target_end_balance=}, {additional_balance=}, {additional_deposits=}"
+            # )
+        except ValueError as e:
+            logging.warning(f"Error calculating growth factor for account {account.id}: {e}")
 
     result.monthly_balances.append(
         create_interpolated_mb(
@@ -76,7 +79,7 @@ def fill_gap_in_non_growth_account(
     # Update the next non-interpolated entry
     next_mb.start_balance = updated_balances[-1].end_balance
     next_mb.monthly_balance = next_mb.end_balance - next_mb.start_balance
-    next_mb.deposits_to_date = updated_balances[-1].deposits_to_date
+
     # logging.info(f"Basic gap fill completed.")
 
 
@@ -91,20 +94,25 @@ def fill_gap_in_growth_account(
         return
 
     # If start_amount (current_mb.end_balance) is zero, or there's no growth, treat this gap as a non-growth gap
-    if current_mb.end_balance == 0 or next_mb.end_balance == Decimal(0):
+    if current_mb.end_balance == Decimal(0) or next_mb.end_balance == Decimal(0):
         # can't calculate growth from zero.  Also if it's lower in future, it's probably being closed
         fill_gap_in_non_growth_account(current_mb, next_mb, gap_months, updated_balances)
         return
 
-    monthly_deposit = (next_mb.deposits_to_date - current_mb.deposits_to_date) / gap_months
+    deposits_between = next_mb.deposits_to_date - current_mb.deposits_to_date
+    monthly_deposit = deposits_between / gap_months
     growth_factor = calculate_monthly_growth_factor(
-        start_amount=current_mb.end_balance, end_amount=next_mb.end_balance, months=gap_months
+        start_amount=current_mb.end_balance,
+        end_amount=next_mb.end_balance - deposits_between,
+        months=gap_months,
     )
+
+    # logger.info(f"fill_gap_in_growth_account {gap_months=} {growth_factor=} {monthly_deposit=}")
 
     for _ in range(1, gap_months):
         new_year_month = next_year_month(current_mb.year_month)
-        new_end_balance = current_mb.end_balance * growth_factor
-        additional_balance = new_end_balance - current_mb.end_balance
+        balance_from_growth = (current_mb.end_balance * growth_factor) - current_mb.end_balance
+        additional_balance = balance_from_growth + monthly_deposit
         additional_deposits = monthly_deposit
 
         interpolated_mb = create_interpolated_mb(
@@ -120,7 +128,7 @@ def fill_gap_in_growth_account(
     # Update the next non-interpolated entry
     next_mb.start_balance = updated_balances[-1].end_balance
     next_mb.monthly_balance = next_mb.end_balance - next_mb.start_balance
-    next_mb.deposits_to_date = updated_balances[-1].deposits_to_date
+    # next_mb.deposits_to_date = updated_balances[-1].deposits_to_date
 
     # logging.info(f"Gap fill completed {growth_factor=} {monthly_deposit=}")
 
@@ -211,11 +219,12 @@ def calculate_growth_factor_for_account(
         )
 
         growth_factor = calculate_monthly_growth_factor(
-            start_amount, end_amount, Decimal(num_months)
+            start_amount, end_amount - deposit_this_month, Decimal(num_months)
         )
         growth_factors.append(growth_factor)
         monthly_deposits.append(deposit_this_month)
 
+    # logger.info(f"{growth_factors=} {monthly_deposits=}")
     median_growth_factor = Decimal(median(growth_factors))
 
     if (
@@ -223,6 +232,7 @@ def calculate_growth_factor_for_account(
         or monthly_balances[0].deposits_to_date == monthly_balances[-1].deposits_to_date
     ):
         # if we don't have half the sample size or no proof deposits happened after the first month, set to zero
+        # logger.info("Setting median_monthly_deposit to zero")
         median_monthly_deposit = Decimal(0)
     else:
         median_monthly_deposit = Decimal(median(monthly_deposits))
