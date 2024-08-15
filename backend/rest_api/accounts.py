@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import Dict, List, Optional, Union
 
 from dateutil import parser
-from fastapi import APIRouter, Body, Depends, HTTPException, Path, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 from backend import api_models, crud, db_models
@@ -139,7 +139,7 @@ def api_create_account(
 @router.get(
     "/{account_id}/transactions/",
     summary="List all transactions for the account",
-    response_model=list[api_models.Transaction],
+    response_model=List[api_models.Transaction],
 )
 def api_get_transactions(
     account_id: int,
@@ -183,6 +183,7 @@ def api_ingest_transactions(
 
     if result.transactions_inserted > 0:
         # todo run rules only on new transactions
+        # todo can we make a trigger to make run rules happen? will this be a pain for tests?
         crud.run_rules(db_session=db_session, account_ids=account.id)
     return result
 
@@ -206,3 +207,36 @@ def api_get_account_balance(
     )[
         0
     ]  # todo placeholder until we ensure account_id is valid
+
+
+def parse_year_month(date_str: Optional[str] = None) -> Optional[datetime]:
+    if date_str is None:
+        return None
+    try:
+        return datetime.strptime(date_str, "%Y-%m")
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid date format {date_str}, expected YYYY-MM.",
+        )
+
+
+def year_month(year_month: Optional[str] = None) -> Optional[datetime]:
+    return parse_year_month(year_month)
+
+
+@router.post(
+    "/{account_id}/set-balance/",
+    summary="Insert a transaction to adjust the end balance for a month. ",
+    description="If there are later months a second transaction will be inserted to count the change for the next month.",
+    response_model=Union[api_models.Transaction, List[api_models.Transaction]],
+)
+def api_set_balance(
+    account: db_models.Account = Depends(get_account_from_path),
+    year_month: Optional[datetime] = Depends(year_month),
+    balance: Decimal = Query(...),
+    db_session: Session = Depends(get_db_session),
+):
+    return crud.set_balance(
+        db_session=db_session, account_id=account.id, year_month=year_month, balance=balance
+    )

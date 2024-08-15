@@ -1,6 +1,6 @@
 import random
 from datetime import datetime, timedelta
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import Decimal
 from typing import List
 
 from dateutil.relativedelta import relativedelta
@@ -16,10 +16,7 @@ from backend.api_models import (
     TransactionCreate,
     TransactionRuleCreate,
 )
-
-
-def two_dp(value):
-    return Decimal(value).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+from backend.crud import two_dp
 
 
 def random_date_month(dt):

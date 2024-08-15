@@ -1,14 +1,14 @@
 import logging
-import statistics
 from datetime import datetime, timedelta
-from decimal import Decimal, getcontext
+from decimal import ROUND_HALF_UP, Decimal, getcontext
 from typing import Dict, List, Optional, Union
 
+from dateutil.relativedelta import relativedelta
 from fastapi import HTTPException, status
 from sqlalchemy import func, text
 from sqlalchemy.orm import Session
 
-from backend import api_models, db_models, util
+from backend import api_models, db_models
 from backend.balance_interpolation import (
     extend_monthly_balances_to_now,
     fill_missing_months,
@@ -19,6 +19,14 @@ logger = logging.getLogger(__name__)
 
 
 getcontext().prec = 28
+
+
+def two_dp(value):
+    return Decimal(value).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+def round_date_to_month(dt: datetime) -> datetime:
+    return datetime(year=dt.year, month=dt.month, day=1)
 
 
 def get_account(account_id: int, db_session: Session) -> Optional[db_models.Account]:
@@ -98,7 +106,7 @@ def get_transactions(
 
     query = query.order_by(db_models.Transaction.date_time.asc())
 
-    logger.info(str(query.statement.compile(compile_kwargs={"literal_binds": True})))
+    # logger.info(str(query.statement.compile(compile_kwargs={"literal_binds": True})))
 
     results = query.all()
 
@@ -109,7 +117,7 @@ def get_transactions(
 
 def create_transactions(
     db_session: Session,
-    transactions: Union[api_models.Transaction, List[api_models.Transaction]],
+    transactions: Union[api_models.TransactionCreate, List[api_models.TransactionCreate]],
     as_db_model: bool = False,
 ):
     if not isinstance(transactions, list):
@@ -121,6 +129,9 @@ def create_transactions(
     db_session.add_all(new_transactions)
     db_session.commit()
 
+    # make a list of all account_ids we've added transactions for
+    account_ids = list({transaction.account_id for transaction in new_transactions})
+
     if not as_db_model:
         new_transactions = [
             api_models.Transaction.model_validate(new_transaction)
@@ -130,23 +141,24 @@ def create_transactions(
     if len(new_transactions) == 1:
         new_transactions = new_transactions[0]
 
-    # make a list of all account_ids we've added transactions for
-    account_ids = list({transaction.account_id for transaction in new_transactions})
     # todo switch uses of list to set where we're passing optional id sets.
     run_rules(db_session, account_ids)
 
     return new_transactions
 
 
-def get_last_transaction_dates(db_session: Session) -> Dict[int, datetime]:
-    # Query to get the last transaction date for each account_id
-    results = (
-        db_session.query(
-            db_models.Transaction.account_id, func.max(db_models.Transaction.date_time)
-        )
-        .group_by(db_models.Transaction.account_id)
-        .all()
-    )
+def get_last_transaction_dates(
+    db_session: Session, account_ids: Optional[List[int]] = None
+) -> Dict[int, datetime]:
+    # Start the query to get the last transaction date for each account_id
+    query = db_session.query(
+        db_models.Transaction.account_id, func.max(db_models.Transaction.date_time)
+    ).group_by(db_models.Transaction.account_id)
+
+    if account_ids:
+        query = query.filter(db_models.Transaction.account_id.in_(account_ids))
+
+    results = query.all()
 
     # Convert the results to a dictionary
     account_last_transaction_date = {account_id: last_date for account_id, last_date in results}
@@ -208,6 +220,61 @@ def get_balance(
     return results
 
 
+def set_balance(
+    db_session: Session,
+    account_id: int,
+    year_month: datetime,
+    balance: Decimal,
+) -> List[api_models.Transaction]:
+    balance = two_dp(balance)
+    current_balance = get_balance(db_session, account_ids=[account_id], end_date=year_month)
+    logger.info(f"{current_balance=}")
+
+    adjustment = Decimal(balance - current_balance[0].balance)
+    year_month = round_date_to_month(year_month)  # should be already
+
+    # if year_month > datetime.now():
+    #     logger.error(f"Cannot set balance in the future: {year_month}")
+    #     raise HTTPException(
+    #         status_code=status.HTTP_400_BAD_REQUEST,
+    #         detail=f"Cannot set balance in the future: {year_month}",
+    #     )
+    #     # todo either remove this limit or maybe apply it to all transactions?  is it really an issue?
+
+    if adjustment == 0:
+        logger.info(f"Balance already set to {balance} for {year_month}")
+        return []
+
+    transactions = [
+        api_models.TransactionCreate(
+            account_id=account_id,
+            date_time=year_month,
+            amount=adjustment,
+            transaction_type="set-balance",
+            description=f"Balance adjustment to set monthly balance to {balance}",
+        )
+    ]
+
+    last_transaction_month = round_date_to_month(
+        get_last_transaction_dates(db_session, account_ids=[account_id]).get(account_id, year_month)
+    )
+
+    if last_transaction_month > year_month:
+        transactions.append(
+            api_models.TransactionCreate(
+                account_id=account_id,
+                date_time=year_month + relativedelta(months=1),
+                amount=Decimal(adjustment * -1),
+                transaction_type="set-balance",
+                description=f"Balance counter-adjustment to cancel previous month balance adjustment",
+            )
+        )
+
+    results = create_transactions(db_session, transactions)
+    # logger.info(f"{results=}")
+    return results
+
+
 def get_first_day_of_next_month(date: datetime) -> datetime:
     next_month = date.replace(day=28) + timedelta(days=4)  # this will never fail
     return next_month.replace(day=1)
@@ -263,14 +330,10 @@ def get_monthly_balances(
 
     sql_query = sql_query.format(where_clause=where_clause)
 
-    # Timer.start("Getting data from DB")
-
     # Execute the SQL query
     result = db_session.execute(
         text(sql_query), {"account_ids": tuple(account_ids)} if account_ids else {}
     ).fetchall()
-
-    # Timer.start("Processing results")
 
     # Process results
     results = {}
@@ -284,17 +347,16 @@ def get_monthly_balances(
             results[account_id] = api_models.MonthlyBalanceResult(
                 account_id=account_id,
                 monthly_balances=[],
-                # start_year_month=year_month_str,
-                # end_year_month=year_month_str,
             )
         else:
-            # results[account_id].end_year_month = year_month_str
             previous_month_balance = results[account_id].monthly_balances[-1].end_balance
             start_balance = previous_month_balance
 
         monthly_balance = Decimal(row[2])
         end_balance = start_balance + monthly_balance
-        deposits_to_date = Decimal(row[5])  # Cumulative deposits
+
+        # Adjust deposits_to_date to reflect cumulative deposits considering negative amounts (withdrawals)
+        deposits_to_date = Decimal(row[5])
 
         monthly_balance_obj = api_models.MonthlyBalance(
             year_month=year_month_str,
@@ -313,20 +375,20 @@ def get_monthly_balances(
         # Fill in the missing months where there were no transactions
         for account_id, result in results.items():
 
-            # Add a final value to the current date for accounts we don't have up to date data for
+            # Add a final value to the current date for accounts we don't have up-to-date data for
             account = next(account for account in accounts if account.id == account_id)
             extend_monthly_balances_to_now(account, result)
 
             # Gap fill to ensure we have data for all months up to the current month
             fill_missing_months(account, result)
 
-    # find accounts with no transactions
+    # Find accounts with no transactions
     empty_accounts = get_account_ids_without_transactions(
         db_session=db_session, account_ids=account_ids
     )
 
     for account_id in empty_accounts:
-        # add an empty monthly balance so we don't have make monthly_balances optional
+        # Add an empty monthly balance so we don't have to make monthly_balances optional
         results[account_id] = api_models.MonthlyBalanceResult(
             account_id=account_id,
             monthly_balances=[
@@ -343,7 +405,6 @@ def get_monthly_balances(
     # Sort by earliest start date
     results = dict(sorted(results.items(), key=lambda item: item[1].start_year_month))
 
-    # Timer.stop(logger)
     return list(results.values())
 
 
