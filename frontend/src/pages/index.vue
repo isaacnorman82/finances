@@ -27,7 +27,12 @@
     </v-row>
     <v-row>
       <v-col>
-        <v-card flat color="primary" variant="tonal">
+        <v-card
+          flat
+          color="primary"
+          variant="tonal"
+          class="fill-height d-flex flex-column"
+        >
           <v-card-title class="d-flex justify-space-between">
             <span>Balance</span>
             <span class="text-right">{{
@@ -45,7 +50,12 @@
         </v-card>
       </v-col>
       <v-col>
-        <v-card flat color="secondary" variant="tonal">
+        <v-card
+          flat
+          color="secondary"
+          variant="tonal"
+          class="fill-height d-flex flex-column"
+        >
           <v-card-title class="d-flex justify-space-between">
             <span>Wealth</span>
             <span class="text-right">{{

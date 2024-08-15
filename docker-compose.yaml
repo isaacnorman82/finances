@@ -40,7 +40,7 @@ services:
       - '8000:8000'
     environment:
       LOAD_SAMPLE_DATA: 'true'
-      # DATABASE_URL: ...  todo
+      DATABASE_URL: "postgresql://postgres:postgres@db/postgres"
     depends_on:
       db:
         condition: service_healthy

@@ -11,8 +11,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from backend import crud
-from backend.api_models import AccountCreate, AccountType, IngestType
-from backend.db import Base, get_db_session
+from backend.db import Base, get_db_session, get_db_url
 from backend.main import app
 from backend.test.sample_data_utils import (
     create_sample_accounts,
@@ -29,7 +28,7 @@ def unique_test_db_name(request):
 
 @pytest.fixture(scope="session")
 def db_engine(unique_test_db_name):
-    base_url = "postgresql://postgres:postgres@db/"
+    base_url = get_db_url()
     test_db_url = f"{base_url}{unique_test_db_name}"
 
     if not database_exists(test_db_url):
