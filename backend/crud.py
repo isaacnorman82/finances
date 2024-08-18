@@ -374,13 +374,19 @@ def get_monthly_balances(
     if interpolate:
         # Fill in the missing months where there were no transactions
         for account_id, result in results.items():
-
-            # Add a final value to the current date for accounts we don't have up-to-date data for
             account = next(account for account in accounts if account.id == account_id)
-            extend_monthly_balances_to_now(account, result)
 
-            # Gap fill to ensure we have data for all months up to the current month
-            fill_missing_months(account, result)
+            try:
+                # Add a final value to the current date for accounts we don't have up-to-date data for
+                extend_monthly_balances_to_now(account, result)
+            except Exception as ex:
+                logger.error(f"Interpolation Error: Failed to extend {account_id=} to now.  {ex=}")
+
+            try:
+                # Gap fill to ensure we have data for all months up to the current month
+                fill_missing_months(account, result)
+            except Exception as ex:
+                logger.error(f"Interpolation Error: Failed to gap fill {account_id=}.  {ex=}")
 
     # Find accounts with no transactions
     empty_accounts = get_account_ids_without_transactions(

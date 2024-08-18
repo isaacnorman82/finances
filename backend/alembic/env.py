@@ -19,9 +19,12 @@ if config.config_file_name is not None:
 # target_metadata = mymodel.Base.metadata
 
 import backend.db_models
-from backend.db import Base
+from backend.db import Base, get_db_url
 
 target_metadata = Base.metadata
+
+# override the db url using the get_db_url function
+config.set_main_option("sqlalchemy.url", get_db_url())
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -41,9 +44,9 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url")
+
     context.configure(
-        url=url,
+        url=config.get_main_option("sqlalchemy.url"),
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},

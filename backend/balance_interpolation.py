@@ -93,19 +93,21 @@ def fill_gap_in_growth_account(
         logging.warning("Ended up in fill_gap_in_growth_account with no gap to fill.")
         return
 
-    # If start_amount (current_mb.end_balance) is zero, or there's no growth, treat this gap as a non-growth gap
-    if current_mb.end_balance == Decimal(0) or next_mb.end_balance == Decimal(0):
-        # can't calculate growth from zero.  Also if it's lower in future, it's probably being closed
-        fill_gap_in_non_growth_account(current_mb, next_mb, gap_months, updated_balances)
-        return
-
     deposits_between = next_mb.deposits_to_date - current_mb.deposits_to_date
     monthly_deposit = deposits_between / gap_months
+
     growth_factor = calculate_monthly_growth_factor(
         start_amount=current_mb.end_balance,
-        end_amount=next_mb.end_balance - deposits_between,
+        end_amount=next_mb.end_balance,
+        deposits_between=deposits_between,
         months=gap_months,
     )
+
+    # if there's no growth treat as non-growth gap.
+    # mostly the same but also doesn't interpolate monthly deposits
+    if growth_factor == 1:
+        fill_gap_in_non_growth_account(current_mb, next_mb, gap_months, updated_balances)
+        return
 
     # logger.info(f"fill_gap_in_growth_account {gap_months=} {growth_factor=} {monthly_deposit=}")
 
@@ -219,7 +221,7 @@ def calculate_growth_factor_for_account(
         )
 
         growth_factor = calculate_monthly_growth_factor(
-            start_amount, end_amount - deposit_this_month, Decimal(num_months)
+            start_amount, end_amount, deposit_this_month, Decimal(num_months)
         )
         growth_factors.append(growth_factor)
         monthly_deposits.append(deposit_this_month)
@@ -241,10 +243,15 @@ def calculate_growth_factor_for_account(
 
 
 def calculate_monthly_growth_factor(
-    start_amount: Decimal, end_amount: Decimal, months: Decimal = 1
+    start_amount: Decimal,
+    end_amount: Decimal,
+    deposits_between: Decimal = Decimal(0),
+    months: Decimal = Decimal(1),
 ):
-    growth_factor = (end_amount / start_amount) ** (Decimal(1) / months)
-    return growth_factor
+    if start_amount == 0 or months == 0:
+        return Decimal(1.0)
+    else:
+        return ((end_amount - deposits_between) / start_amount) ** (Decimal(1) / months)
 
 
 def calculate_balance_after_growth(
