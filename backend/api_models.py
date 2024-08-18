@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import ROUND_HALF_UP, Decimal
 from enum import StrEnum, auto
 from typing import List, Literal, Optional, Union
@@ -55,6 +55,7 @@ class InterpolationType(StrEnum):
 
 
 class AccountCreate(BaseModel):
+    model_config = _orm_config
     institution: str
     name: str
     account_type: AccountType
@@ -66,7 +67,6 @@ class AccountCreate(BaseModel):
 
 
 class Account(AccountCreate):
-    model_config = _orm_config
     id: int
 
 
@@ -98,16 +98,17 @@ class IsValueAdjContainsAny(RuleCondition):
 
 
 class TransactionRuleCreate(BaseModel):
+    model_config = _orm_config
     account_id: int
     condition: Union[RuleCondition, IsValueAdjContainsAny]
 
 
 class TransactionRule(TransactionRuleCreate):
-    model_config = _orm_config
     id: int
 
 
 class TransactionCreate(BaseModel):
+    model_config = _orm_config
     account_id: int
     date_time: datetime
     amount: Decimal
@@ -127,7 +128,6 @@ class TransactionCreate(BaseModel):
 
 
 class Transaction(TransactionCreate):
-    model_config = _orm_config
     id: int
 
 
@@ -207,15 +207,40 @@ class AccountSummary(BaseModel):
 
 
 class DataSeriesCreate(BaseModel):
+    model_config = _orm_config
     date_time: datetime
     key: str
     value: str
 
 
 class DataSeries(DataSeriesCreate):
-    model_config = _orm_config
     id: int
 
 
 class AddDataSeriesResult(BaseModel):
     values_added: int
+
+
+class AccountBackup(BaseModel):
+    account: AccountCreate
+    rule_conditions: List[Union[RuleCondition, IsValueAdjContainsAny]] = []
+    transactions: List[TransactionCreate] = []
+
+
+class Backup(BaseModel, ABC):
+    version: Literal["invalid"] = "invalid"
+
+    class Config:
+        use_enum_values = True
+        discriminator = "version"
+
+    # @abstractmethod
+    # def upgrade(self, transaction: Transaction) -> bool:
+    #     pass
+    # in future a BackupV2 can implement upgrade(backupV1)
+
+
+class BackupV1(Backup):
+    version: Literal["1.0.0"] = "1.0.0"
+    backup_datetime: str = str(datetime.now(timezone.utc))
+    accounts: List[AccountBackup] = []

@@ -21,7 +21,7 @@ RUN pip install --no-cache-dir -r backend/requirements.txt
 # Copy the entire backend directory into /backend
 COPY backend/ backend/
 COPY alembic.ini alembic.ini
-copy load_sample_data.py load_sample_data.py
+COPY load_sample_data.py load_sample_data.py
 
 # Expose the backend port
 EXPOSE 8000

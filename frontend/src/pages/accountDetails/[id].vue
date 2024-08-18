@@ -305,7 +305,7 @@
   }));
 
   watch(
-    selectedYearMonth,
+    [accountId, selectedYearMonth],
     async () => {
       // Ensure bounds still set
       if (accountSummary.value) {
