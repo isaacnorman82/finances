@@ -86,7 +86,8 @@ DB: Dockerised Postgres
 PGADMIN_DEFAULT_EMAIL=<email_addr>
 PGADMIN_DEFAULT_PASSWORD=<password>
 ```
-- run
+- set load_sample_data in the docker compose file to true if you want a demo.
+- run:
 ```
 docker compose up --build -d
 ```
@@ -110,7 +111,7 @@ alembic upgrade head
 ```
 python load_sample_data.py
 ```
-- run the backend
+- run the backend:
 ```
 fastapi dev backend/main.py
 ```
@@ -119,7 +120,7 @@ fastapi dev backend/main.py
 cd frontend
 npm install
 ```
-- run the frontend
+- run the frontend:
 ```
 cd frontend
 npm run dev
