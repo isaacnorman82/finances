@@ -6,6 +6,7 @@ import type {
   Account,
   AccountCreate,
   AccountSummary,
+  APIVersionType,
   BalanceResult,
   DataSeries,
   DataSeriesCreate,
@@ -218,5 +219,10 @@ export const createDataSeries = async (
   dataSeries: DataSeriesCreate
 ): Promise<DataSeries> => {
   const response = await apiClient.post("/dataseries/", dataSeries);
+  return response.data;
+};
+
+export const getAPIVersion = async (): Promise<APIVersionType> => {
+  const response = await apiClient.get<APIVersionType>("/version");
   return response.data;
 };

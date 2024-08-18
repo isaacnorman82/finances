@@ -252,3 +252,7 @@ export class MonthYear {
     return result;
   }
 }
+
+export interface APIVersionType {
+  apiVersion: string;
+}
