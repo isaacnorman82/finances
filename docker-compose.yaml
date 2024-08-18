@@ -39,7 +39,7 @@ services:
     ports:
       - '8000:8000'
     environment:
-      LOAD_SAMPLE_DATA: 'true'
+      LOAD_SAMPLE_DATA: 'false'
       DATABASE_URL: "postgresql://postgres:postgres@db/postgres"
     depends_on:
       db:

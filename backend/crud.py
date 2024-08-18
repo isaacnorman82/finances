@@ -37,8 +37,7 @@ def get_accounts(
     db_session: Session,
     institution: Optional[str] = None,
     name: Optional[str] = None,
-    skip: int = 0,  # todo make optional
-    limit: int = 100,
+    as_db_model: bool = False,
 ) -> List[api_models.Account]:
     query = db_session.query(db_models.Account)
 
@@ -47,7 +46,9 @@ def get_accounts(
     if name:
         query = query.filter(db_models.Account.name == name)
 
-    results = query.offset(skip).limit(limit).all()
+    results = query.all()
+    if as_db_model:
+        return results
     return [api_models.Account.model_validate(result) for result in results]
 
 
@@ -83,8 +84,6 @@ def get_transactions(
     account_id: int,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
-    skip: int = None,
-    limit: int = None,
     as_db_model: bool = False,
 ) -> List[db_models.Transaction] | List[api_models.Transaction]:
 
@@ -97,12 +96,6 @@ def get_transactions(
 
     if end_date:
         query = query.filter(db_models.Transaction.date_time <= end_date)
-
-    if skip is not None:
-        query = query.offset(skip)
-
-    if limit is not None:
-        query = query.limit(limit)
 
     query = query.order_by(db_models.Transaction.date_time.asc())
 
@@ -534,3 +527,61 @@ def get_data_series(
         return results
 
     return [api_models.DataSeries.model_validate(result) for result in results]
+
+
+def get_account_backup(db_session: Session) -> api_models.BackupV1:
+    db_accounts = get_accounts(db_session=db_session, as_db_model=True)
+    api_rules = get_rules(db_session=db_session)
+
+    backup = api_models.BackupV1()
+
+    for db_account in db_accounts:
+        db_txs: List[db_models.Transaction] = get_transactions(
+            db_session=db_session, account_id=db_account.id, as_db_model=True
+        )
+
+        conditions: List[api_models.RuleCondition] = [
+            rule.condition for rule in api_rules if rule.account_id == db_account.id
+        ]
+
+        transactions: List[api_models.TransactionCreate] = [
+            api_models.TransactionCreate.model_validate(tx) for tx in db_txs
+        ]
+        # this will leave transactions with the account_id field set but we'll overwrite that on import
+
+        backup.accounts.append(
+            api_models.AccountBackup(
+                account=api_models.AccountCreate.model_validate(db_account),
+                rule_conditions=conditions,
+                transactions=transactions,
+            )
+        )
+    return backup
+
+
+def restore_account_backup(db_session: Session, backup: api_models.BackupV1):
+    # assume caller already checked db is empty
+
+    # could accept different versions here and upgrade, just handle v1 for now
+
+    accounts_to_create = [account_backup.account for account_backup in backup.accounts]
+    new_accounts = create_accounts(db_session=db_session, accounts=accounts_to_create)
+
+    for new_account, account_backup in zip(new_accounts, backup.accounts):
+        rules = [
+            api_models.TransactionRuleCreate(account_id=new_account.id, condition=val)
+            for val in account_backup.rule_conditions
+        ]
+        create_transaction_rules(db_session=db_session, rules=rules)
+
+        transactions_to_create = [
+            db_models.Transaction(
+                account_id=new_account.id, **transaction.model_dump(exclude={"account_id"})
+            )
+            for transaction in account_backup.transactions
+        ]
+
+        db_session.bulk_save_objects(transactions_to_create)
+        db_session.commit()
+
+    # todo this has lots of commits in called functions and per account, prob should try to avoid that?
