@@ -1,5 +1,6 @@
 <template>
   <v-footer app height="40">
+    <v-spacer />
     <a
       v-for="item in items"
       :key="item.title"
@@ -9,36 +10,36 @@
       target="_blank"
       :title="item.title"
     >
-      <v-icon :icon="item.icon" :size="item.icon === '$vuetify' ? 24 : 16" />
+      <v-icon :icon="item.icon" size="16" />
     </a>
-
-    <!-- <div
-      class="text-caption text-disabled"
-      style="position: absolute; right: 16px"
-    >
-      &copy; 2016-{{ new Date().getFullYear() }}
-      <span class="d-none d-sm-inline-block">Vuetify, LLC</span>
-      —
-      <a
-        class="text-decoration-none on-surface"
-        href="https://vuetifyjs.com/about/licensing/"
-        rel="noopener noreferrer"
-        target="_blank"
-      >
-        MIT License
-      </a>
-    </div> -->
+    <span class="version-info">Version: {{ version }}</span>
   </v-footer>
 </template>
 
 <script setup lang="ts">
+  import { getAPIVersion } from "@/services/apiService";
+  import { onMounted, ref } from "vue";
+
+  // Footer items
   const items = [
     {
-      title: "Vuetify GitHub",
+      title: "GitHub",
       icon: "mdi-github",
       href: "https://github.com/isaacnorman82/finances",
     },
   ];
+
+  const version = ref<string | null>(null);
+
+  onMounted(async () => {
+    try {
+      const versionInfo = await getAPIVersion();
+      version.value = versionInfo.apiVersion;
+    } catch (error) {
+      console.error("Error fetching API version:", error);
+      version.value = "Error";
+    }
+  });
 </script>
 
 <style scoped lang="sass">
@@ -49,4 +50,11 @@
 
     &:hover
       color: rgba(25, 118, 210, 1)
+
+  .version-info
+    font-size: 12px
+    color: rgba(var(--v-theme-on-background), 0.6)
+    text-align: right
+    line-height: 1.5
+    padding: 4px 0 2px 0
 </style>
