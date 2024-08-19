@@ -42,7 +42,7 @@ def api_add_data_series_values(
     if not isinstance(values, list):
         values = [values]
 
-    result = crud.add_data_series(db_session=db_session, values=values)
+    result = crud.create_data_series(db_session=db_session, values=values)
 
     logger.info(f"Add series result: {result}")
     return result
