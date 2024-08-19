@@ -35,11 +35,14 @@
         >
           <v-card-title class="d-flex justify-space-between">
             <span>Balance</span>
-            <span class="text-right">{{
-              formatBalance(
-                sumMonthlyBalances(filteredAccountSummaries, graphTimescale)
-              )
-            }}</span>
+            <span
+              class="text-right"
+              v-html="
+                formatBalance(
+                  sumMonthlyBalances(filteredAccountSummaries, graphTimescale)
+                )
+              "
+            />
           </v-card-title>
           <v-card-item>
             <TotalBalanceLineChart
@@ -58,9 +61,12 @@
         >
           <v-card-title class="d-flex justify-space-between">
             <span>Wealth</span>
-            <span class="text-right">{{
-              formatBalance(sumAccountBalances(filteredAccountSummaries))
-            }}</span>
+            <span
+              class="text-right"
+              v-html="
+                formatBalance(sumAccountBalances(filteredAccountSummaries))
+              "
+            />
           </v-card-title>
           <v-card-item>
             <WealthPieChart

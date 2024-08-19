@@ -328,5 +328,5 @@ def api_set_balance(
     db_session: Session = Depends(get_db_session),
 ):
     return crud.set_balance(
-        db_session=db_session, account_id=account.id, year_month=year_month, balance=balance
+        db_session=db_session, account_id=account.id, balance=balance, year_month=year_month
     )
