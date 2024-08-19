@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import ROUND_HALF_UP, Decimal, getcontext
 from typing import Dict, List, Optional, Union
 
@@ -216,12 +216,15 @@ def get_balance(
 def set_balance(
     db_session: Session,
     account_id: int,
-    year_month: datetime,
     balance: Decimal,
+    year_month: Optional[datetime] = None,
 ) -> List[api_models.Transaction]:
+
+    if year_month is None:
+        year_month = datetime.now(timezone.utc)
+
     balance = two_dp(balance)
     current_balance = get_balance(db_session, account_ids=[account_id], end_date=year_month)
-    logger.info(f"{current_balance=}")
 
     adjustment = Decimal(balance - current_balance[0].balance)
     year_month = round_date_to_month(year_month)  # should be already
