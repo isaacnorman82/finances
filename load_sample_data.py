@@ -27,4 +27,4 @@ if os.getenv("LOAD_SAMPLE_DATA", "false").lower() == "true":
         print(f"Adding {len(sample_transactions)} transactions.")
         crud.create_transactions(db_session=db_session, transactions=sample_transactions)
         print(f"Adding {len(sample_data_series)} data series values.")
-        crud.add_data_series(db_session=db_session, values=sample_data_series)
+        crud.create_data_series(db_session=db_session, values=sample_data_series)

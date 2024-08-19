@@ -56,9 +56,12 @@ def create_accounts(
     db_session: Session,
     accounts: Union[api_models.Account, List[api_models.Account]],
     as_db_model: bool = False,
-):
+) -> List[Union[api_models.Account, db_models.Account]]:
     if not isinstance(accounts, list):
         accounts = [accounts]
+
+    if len(accounts) == 0:
+        return []
 
     new_accounts: List[db_models.Account] = [
         db_models.Account(**account.model_dump()) for account in accounts
@@ -69,13 +72,7 @@ def create_accounts(
         db_session.refresh(new_account)
 
     if not as_db_model:
-        new_accounts = [
-            api_models.Account.model_validate(new_account) for new_account in new_accounts
-        ]
-
-    if len(new_accounts) == 1:
-        new_accounts = new_accounts[0]
-
+        return [api_models.Account.model_validate(new_account) for new_account in new_accounts]
     return new_accounts
 
 
@@ -112,9 +109,12 @@ def create_transactions(
     db_session: Session,
     transactions: Union[api_models.TransactionCreate, List[api_models.TransactionCreate]],
     as_db_model: bool = False,
-):
+) -> List[Union[api_models.Transaction, db_models.Transaction]]:
     if not isinstance(transactions, list):
         transactions = [transactions]
+
+    if len(transactions) == 0:
+        return []
 
     new_transactions: List[db_models.Transaction] = [
         db_models.Transaction(**transaction.model_dump()) for transaction in transactions
@@ -125,18 +125,14 @@ def create_transactions(
     # make a list of all account_ids we've added transactions for
     account_ids = list({transaction.account_id for transaction in new_transactions})
 
-    if not as_db_model:
-        new_transactions = [
-            api_models.Transaction.model_validate(new_transaction)
-            for new_transaction in new_transactions
-        ]
-
-    if len(new_transactions) == 1:
-        new_transactions = new_transactions[0]
-
     # todo switch uses of list to set where we're passing optional id sets.
     run_rules(db_session, account_ids)
 
+    if not as_db_model:
+        return [
+            api_models.Transaction.model_validate(new_transaction)
+            for new_transaction in new_transactions
+        ]
     return new_transactions
 
 
@@ -413,9 +409,13 @@ def get_monthly_balances(
 def create_transaction_rules(
     db_session: Session,
     rules: Union[api_models.TransactionRuleCreate, List[api_models.TransactionRuleCreate]],
-):
+    as_db_model: bool = False,
+) -> List[Union[api_models.TransactionRule, db_models.TransactionRule]]:
     if not isinstance(rules, list):
         rules = [rules]
+
+    if len(rules) == 0:
+        return []
 
     new_rules: List[db_models.TransactionRule] = [
         db_models.TransactionRule(**rule.model_dump()) for rule in rules
@@ -423,7 +423,9 @@ def create_transaction_rules(
     db_session.add_all(new_rules)
     db_session.commit()
 
-    return status.HTTP_201_CREATED
+    if not as_db_model:
+        return [api_models.TransactionRule.model_validate(new_rule) for new_rule in new_rules]
+    return new_rules
 
 
 def get_transaction_rule(id: int, db_session: Session) -> api_models.TransactionRule:
@@ -494,7 +496,7 @@ def run_rules(db_session: Session, account_ids: Optional[Union[int, List[int]]] 
     # logger.info(f"Rules run.")
 
 
-def add_data_series(
+def create_data_series(
     db_session: Session,
     values: List[api_models.DataSeriesCreate],
 ) -> api_models.AddDataSeriesResult:
@@ -535,6 +537,11 @@ def get_account_backup(db_session: Session) -> api_models.BackupV1:
 
     backup = api_models.BackupV1()
 
+    backup.data_series = [
+        api_models.DataSeriesCreate.model_validate(ds)
+        for ds in get_data_series(db_session=db_session, as_db_model=True)
+    ]
+
     for db_account in db_accounts:
         db_txs: List[db_models.Transaction] = get_transactions(
             db_session=db_session, account_id=db_account.id, as_db_model=True
@@ -564,6 +571,7 @@ def restore_account_backup(db_session: Session, backup: api_models.BackupV1):
 
     # could accept different versions here and upgrade, just handle v1 for now
 
+    create_data_series(db_session=db_session, values=backup.data_series)
     accounts_to_create = [account_backup.account for account_backup in backup.accounts]
     new_accounts = create_accounts(db_session=db_session, accounts=accounts_to_create)
 
@@ -581,7 +589,5 @@ def restore_account_backup(db_session: Session, backup: api_models.BackupV1):
             for transaction in account_backup.transactions
         ]
 
-        db_session.bulk_save_objects(transactions_to_create)
-        db_session.commit()
-
-    # todo this has lots of commits in called functions and per account, prob should try to avoid that?
+        db_session.add_all(transactions_to_create)
+    db_session.commit()

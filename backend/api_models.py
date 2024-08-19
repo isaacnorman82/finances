@@ -244,3 +244,4 @@ class BackupV1(Backup):
     version: Literal["1.0.0"] = "1.0.0"
     backup_datetime: str = str(datetime.now(timezone.utc))
     accounts: List[AccountBackup] = []
+    data_series: List[DataSeriesCreate] = []
