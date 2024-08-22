@@ -1,4 +1,9 @@
-import type { AccountSummary, AcType, MonthlyBalance } from "@/types.d";
+import type {
+  AccountSummary,
+  AcType,
+  IngestResult,
+  MonthlyBalance,
+} from "@/types.d";
 import { MonthYear, Timescale } from "@/types.d";
 import { ChartData } from "chart.js";
 import { startOfMonth, subMonths } from "date-fns";
@@ -352,4 +357,22 @@ export function getAccountTypeIcon(accountType: AcType): string {
     default:
       return "mdi-help-circle-outline"; // Fallback icon if account type is unknown
   }
+}
+
+export /**
+ * Formats the result of ingestTransactions into a human-readable string.
+ * @param result - The result of the ingestTransactions function.
+ * @returns A formatted string.
+ */
+function formatIngestResult(result: IngestResult): string {
+  // Start with the base message
+  let resultText = `Success: ${result.transactionsInserted} inserted, ${result.transactionsDeleted} deleted.`;
+
+  if (result.startDate && result.endDate) {
+    const formattedStartDate = formatDate(result.startDate);
+    const formattedEndDate = formatDate(result.endDate);
+    resultText += ` From ${formattedStartDate} to ${formattedEndDate}`;
+  }
+
+  return resultText;
 }

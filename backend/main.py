@@ -25,7 +25,22 @@ def _configure_app() -> FastAPI:
     version = f"v{__version__}"
 
     tags_metadata = [
-        # todo
+        {
+            "name": "Accounts",
+            "description": "",
+        },
+        {
+            "name": "Balance",
+            "description": "",
+        },
+        {
+            "name": "Data Series",
+            "description": "",
+        },
+        {
+            "name": "Metadata",
+            "description": "",
+        },
     ]
 
     app = FastAPI(
