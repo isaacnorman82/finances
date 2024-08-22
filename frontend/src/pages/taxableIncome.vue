@@ -12,6 +12,14 @@
       </v-col>
     </v-row>
     <v-row>
+      <v-col
+        ><v-toolbar color="white" density="compact">
+          <v-spacer />
+          <inflation-toggle v-model="inflationToggleState" />
+        </v-toolbar>
+      </v-col>
+    </v-row>
+    <v-row>
       <v-col>
         <v-card flat title="Taxable Income" color="primary" variant="tonal">
           <v-card-item>
@@ -47,22 +55,36 @@
 <script setup lang="ts">
   import { useDataSeriesStore } from "@/stores/dataSeries";
   import { DataSeries } from "@/types";
-  import { dataSeriesToChartData, formatMonthYear } from "@/utils";
+  import {
+    adjustChartDataForInflation,
+    dataSeriesToChartData,
+    formatMonthYear,
+  } from "@/utils";
   import { ChartData } from "chart.js";
+
+  const inflationToggleState = ref({ isOn: false, year: 2023 });
 
   const breadcrumbs = computed(() => {
     return [{ title: "Taxable Income", disabled: false }];
   });
 
   const taxableIncomeSeries = computed<ChartData>(() => {
-    return dataSeriesToChartData({
+    let chartData = dataSeriesToChartData({
       "Net Pay": "#64B5F6",
       "Tax Paid": "#E57373",
     });
+
+    return inflationToggleState.value.isOn
+      ? adjustChartDataForInflation(
+          chartData,
+          inflationToggleState.value.year,
+          "YYYY"
+        )
+      : chartData;
   });
 
   const salarySeries = computed<ChartData>(() => {
-    return dataSeriesToChartData(
+    let chartData = dataSeriesToChartData(
       {
         Salary: "#64B5F6",
         "Car Allowance": "#90CAF9",
@@ -70,6 +92,14 @@
       },
       formatMonthYear
     );
+
+    return inflationToggleState.value.isOn
+      ? adjustChartDataForInflation(
+          chartData,
+          inflationToggleState.value.year,
+          "MM/YYYY"
+        )
+      : chartData;
   });
 
   const companies = computed(() => {

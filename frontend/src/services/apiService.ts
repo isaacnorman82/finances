@@ -10,6 +10,7 @@ import type {
   BalanceResult,
   DataSeries,
   DataSeriesCreate,
+  InflationRates,
   IngestResult,
   MonthlyBalanceResult,
   Transaction,
@@ -254,5 +255,10 @@ export async function setBalance(
     }
   );
 
+  return response.data;
+}
+
+export async function getInflationRates(): Promise<InflationRates> {
+  const response = await apiClient.get<InflationRates>("/metadata/cpi/");
   return response.data;
 }
