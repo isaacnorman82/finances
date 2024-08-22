@@ -3,6 +3,7 @@ import type {
   AcType,
   IngestResult,
   MonthlyBalance,
+  Transaction,
 } from "@/types.d";
 import { MonthYear, Timescale } from "@/types.d";
 import { ChartData } from "chart.js";
@@ -366,7 +367,7 @@ export /**
  */
 function formatIngestResult(result: IngestResult): string {
   // Start with the base message
-  let resultText = `Success: ${result.transactionsInserted} inserted, ${result.transactionsDeleted} deleted.`;
+  let resultText = `Success:  ${result.transactionsInserted} inserted, ${result.transactionsDeleted} deleted.`;
 
   if (result.startDate && result.endDate) {
     const formattedStartDate = formatDate(result.startDate);
@@ -375,4 +376,11 @@ function formatIngestResult(result: IngestResult): string {
   }
 
   return resultText;
+}
+
+export function formatTransaction(transaction: Transaction): string {
+  const date = new Date(transaction.dateTime);
+  const month = (date.getUTCMonth() + 1).toString().padStart(2, "0");
+  const year = date.getUTCFullYear();
+  return `${transaction.amount} on ${month}/${year}`;
 }

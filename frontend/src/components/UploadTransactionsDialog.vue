@@ -2,9 +2,14 @@
 <template>
   <v-dialog v-model="isOpen" activator="parent" max-width="600px">
     <template v-slot:default="{ isActive }">
-      <v-card>
-        <v-card-title> Upload Transactions </v-card-title>
-
+      <v-card
+        prepend-icon="mdi-file-upload-outline"
+        title="Add Transactions"
+        subtitle="Upload a file with transactions for this account"
+      >
+        <v-card-text>
+          Existing transactions for the same time window will be deleted first.
+        </v-card-text>
         <v-card-text>
           <v-form>
             <v-select
@@ -83,7 +88,7 @@
         showResults(formatIngestResult(result));
         resetForm();
       } catch (error) {
-        console.error("Failed: ", error);
+        console.error("Failed:  ", error);
         showResults("Failed: " + error, "red");
         resultSnackbar.value = true;
       }

@@ -10,8 +10,6 @@
 </template>
 
 <script setup lang="ts">
-  import { defineEmits, defineProps } from "vue";
-
   // Define the props for the component
   const props = defineProps({
     modelValue: {

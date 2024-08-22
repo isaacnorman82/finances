@@ -237,3 +237,22 @@ export const getIngestValues = async (): Promise<string[]> => {
   const response = await apiClient.get<string[]>("/metadata/ingest-types");
   return response.data;
 };
+
+export async function setBalance(
+  accountId: number,
+  balance: number,
+  yearMonth?: string
+): Promise<Transaction[]> {
+  const response = await apiClient.post<Transaction[]>(
+    `/accounts/${accountId}/set-balance/`,
+    null,
+    {
+      params: {
+        balance: balance.toString(),
+        year_month: yearMonth,
+      },
+    }
+  );
+
+  return response.data;
+}
