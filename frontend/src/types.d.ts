@@ -24,13 +24,23 @@ export interface AccountCreate {
   accountBehaviour?: AcBehaviour;
   defaultIngestType?: IngestType;
   isActive?: boolean;
-  description?: string | null;
-  acNumber: string | null;
-  externalLink: string | null;
+  description?: string;
+  acNumber?: string;
+  externalLink?: string;
 }
 
-export interface Account extends AccountCreate {
+// doesn't extend create type because some fields are always present in such as defaultIngestType
+export interface Account {
   id: number;
+  institution: string;
+  name: string;
+  accountType: AcType;
+  accountBehaviour: AcBehaviour;
+  defaultIngestType: IngestType;
+  isActive: boolean;
+  description?: string;
+  acNumber?: string;
+  externalLink?: string;
 }
 
 export interface Transaction {

@@ -7,6 +7,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AccountDetailsBalanceCard: typeof import('./components/AccountDetailsBalanceCard.vue')['default']
     AccountLineChart: typeof import('./components/AccountLineChart.vue')['default']
     AccountTypeToggle: typeof import('./components/AccountTypeToggle.vue')['default']
     AppFooter: typeof import('./components/AppFooter.vue')['default']
@@ -18,6 +19,7 @@ declare module 'vue' {
     StackedBarChart: typeof import('./components/StackedBarChart.vue')['default']
     TimescaleToggle: typeof import('./components/TimescaleToggle.vue')['default']
     TotalBalanceLineChart: typeof import('./components/TotalBalanceLineChart.vue')['default']
+    UploadTransactionsDialog: typeof import('./components/UploadTransactionsDialog.vue')['default']
     WealthPieChart: typeof import('./components/WealthPieChart.vue')['default']
   }
 }

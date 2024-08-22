@@ -10,7 +10,7 @@
 </template>
 
 <script setup lang="ts">
-  import { defineEmits, defineProps, ref, watch } from "vue";
+  import { defineEmits, defineProps } from "vue";
 
   // Define the props for the component
   const props = defineProps({
@@ -27,21 +27,17 @@
   // Define the emits for the component
   const emit = defineEmits(["update:modelValue"]);
 
-  // Create a local value for the toggle
-  const localValue = ref(props.modelValue);
-
-  // Watch for changes in localValue and emit them
-  watch(localValue, (newValue) => {
-    emit("update:modelValue", newValue);
+  const localValue = computed({
+    get() {
+      return props.modelValue;
+    },
+    set(value) {
+      const booleanValue = value === true;
+      if (booleanValue !== props.modelValue) {
+        emit("update:modelValue", booleanValue);
+      }
+    },
   });
-
-  // Watch for external changes to modelValue and update localValue
-  watch(
-    () => props.modelValue,
-    (newValue) => {
-      localValue.value = newValue;
-    }
-  );
 </script>
 
 <style scoped>

@@ -123,21 +123,27 @@ export const getTransactionsForAccount = async (
  * Ingest transactions for a specific account.
  * @param accountId - The ID of the account
  * @param formData - The form data containing the file to upload
+ * @param ingestType - The type of ingestion (optional, passed as a query string if provided)
  * @returns A promise that resolves to the ingest result
  */
 export const ingestTransactions = async (
   accountId: number,
-  formData: FormData
+  formData: FormData,
+  ingestType?: string
 ): Promise<IngestResult> => {
-  const response = await apiClient.post(
-    `/accounts/${accountId}/transactions/`,
-    formData,
-    {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    }
-  );
+  // Construct the URL
+  let url = `/accounts/${accountId}/transactions/`;
+  if (ingestType) {
+    url += `?ingest_type=${encodeURIComponent(ingestType)}`;
+  }
+
+  // Make the API request
+  const response = await apiClient.post(url, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
   return response.data;
 };
 
@@ -223,6 +229,11 @@ export const createDataSeries = async (
 };
 
 export const getAPIVersion = async (): Promise<APIVersionType> => {
-  const response = await apiClient.get<APIVersionType>("/version");
+  const response = await apiClient.get<APIVersionType>("/metadata/version");
+  return response.data;
+};
+
+export const getIngestValues = async (): Promise<string[]> => {
+  const response = await apiClient.get<string[]>("/metadata/ingest-types");
   return response.data;
 };
