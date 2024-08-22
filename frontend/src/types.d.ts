@@ -266,3 +266,7 @@ export class MonthYear {
 export interface APIVersionType {
   apiVersion: string;
 }
+
+export type InflationRates = {
+  [year: number]: number;
+};

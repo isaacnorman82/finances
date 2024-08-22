@@ -1,3 +1,4 @@
+import { useMetadataStore } from "@/stores/metadata";
 import type {
   AccountSummary,
   AcType,
@@ -320,6 +321,45 @@ export function dataSeriesToChartData(
   };
 }
 
+export function adjustChartDataForInflation(
+  chartData: ChartData,
+  refYear: number,
+  dateFormat: "MM/YYYY" | "YYYY/YY" | "YYYY"
+): ChartData {
+  const metadataStore = useMetadataStore();
+  const inflationRates = metadataStore.inflationRates;
+
+  return {
+    ...chartData,
+    datasets: chartData.datasets.map((dataset) => ({
+      ...dataset,
+      data: dataset.data.map((value, index) => {
+        const label = chartData.labels?.[index]?.toString();
+        let year: number | undefined;
+
+        if (label) {
+          switch (dateFormat) {
+            case "MM/YYYY":
+              year = parseInt(label.split("/")[1]); // Extract year from 'MM/YYYY'
+              break;
+            case "YYYY/YY":
+              year = parseInt(label.split("/")[0]); // Extract year from 'YYYY/YY'
+              break;
+            case "YYYY":
+              year = parseInt(label); // Use the year directly
+              break;
+          }
+
+          if (year && inflationRates[year] !== undefined) {
+            return adjustForInflation(value as number, year, refYear);
+          }
+        }
+        return value;
+      }),
+    })),
+  };
+}
+
 export function formatHeaderText(text: string): string {
   return text
     .replace(/([a-z0-9])([A-Z])/g, "$1 $2") // Add space before uppercase letters
@@ -383,4 +423,51 @@ export function formatTransaction(transaction: Transaction): string {
   const month = (date.getUTCMonth() + 1).toString().padStart(2, "0");
   const year = date.getUTCFullYear();
   return `${transaction.amount} on ${month}/${year}`;
+}
+
+export function adjustForInflation(
+  amount: number,
+  year: number,
+  refYear: number
+): number {
+  const metadataStore = useMetadataStore();
+
+  // Fetch inflation rates from the store
+  const inflationRates = metadataStore.inflationRates;
+
+  if (year === refYear) {
+    return amount;
+  }
+
+  let adjustedAmount = amount;
+
+  if (year < refYear) {
+    for (let y = year; y < refYear; y++) {
+      if (inflationRates[y] !== undefined) {
+        adjustedAmount *= 1 + inflationRates[y];
+      } else {
+        console.warn(`Inflation rate for year ${y} not found.`);
+      }
+    }
+  } else {
+    for (let y = year; y > refYear; y--) {
+      if (inflationRates[y] !== undefined) {
+        adjustedAmount /= 1 + inflationRates[y];
+      } else {
+        console.warn(`Inflation rate for year ${y} not found.`);
+      }
+    }
+  }
+
+  console.log(
+    "amount",
+    amount,
+    "year",
+    year,
+    "refYear",
+    refYear,
+    "adjustedAmount",
+    adjustedAmount
+  );
+  return adjustedAmount;
 }

@@ -14,6 +14,7 @@ declare module 'vue' {
     BalanceSparkline: typeof import('./components/BalanceSparkline.vue')['default']
     copy: typeof import('./components/UploadTransactionsDialog copy.vue')['default']
     HelloWorld: typeof import('./components/HelloWorld.vue')['default']
+    InflationToggle: typeof import('./components/InflationToggle.vue')['default']
     InterpolateToggle: typeof import('./components/InterpolateToggle.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
