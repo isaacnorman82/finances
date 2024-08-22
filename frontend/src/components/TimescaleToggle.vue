@@ -16,7 +16,7 @@
 
 <script setup lang="ts">
   import { Timescale } from "@/types.d";
-  import { defineEmits, defineProps, ref, watch } from "vue";
+  import { ref, watch } from "vue";
 
   const props = defineProps<{
     modelValue: Timescale;

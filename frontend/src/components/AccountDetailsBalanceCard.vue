@@ -27,8 +27,13 @@
     <v-spacer />
     <v-card-actions>
       <v-btn prepend-icon="mdi-file-upload-outline">
-        Upload Transactions
+        Add Transactions
         <upload-transactions-dialog :account-summary="accountSummary" />
+      </v-btn>
+      <v-spacer />
+      <v-btn prepend-icon="mdi-clock-edit-outline">
+        Set Balance
+        <set-balance-dialog :account-summary="accountSummary" />
       </v-btn>
     </v-card-actions>
   </v-card>
