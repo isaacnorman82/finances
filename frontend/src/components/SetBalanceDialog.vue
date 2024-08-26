@@ -126,7 +126,7 @@
 
   const currencyRules = [
     (v: number) => !!v || "Amount is required",
-    (v: string) => /^\d+(\.\d{1,2})?$/.test(v) || "Max 2 decimal places",
+    (v: string) => /^(-)?\d+(\.\d{1,2})?$/.test(v) || "Max 2 decimal places",
   ];
 
   const handleSubmit = async () => {
