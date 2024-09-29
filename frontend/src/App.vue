@@ -56,10 +56,7 @@
   const favoriteAccountsStore = useFavoriteAccountsStore();
 
   onMounted(() => {
-    // Set the page title
-    document.title = "My Vuetify App";
-
-    // Set the favicon
+    document.title = "Finances";
     setFavicon("/favicon.svg");
   });
 
