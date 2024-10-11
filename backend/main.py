@@ -9,8 +9,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from backend import __version__
 from backend.rest_api import get_api_router
+from backend.rest_api.metadata import API_VERSION
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s:%(lineno)d -  %(levelname)s - %(message)s"
@@ -22,7 +22,7 @@ ALLOWED_ORIGIN = "http://localhost:3000"
 
 
 def _configure_app() -> FastAPI:
-    version = f"v{__version__}"
+    version = f"v{API_VERSION}"
 
     tags_metadata = [
         {

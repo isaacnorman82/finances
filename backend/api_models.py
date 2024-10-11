@@ -46,6 +46,7 @@ class IngestType(StrEnum):
     csv = auto()
     value_and_contrib_csv = auto()
     ofx_transactions = auto()
+    amex_csv = auto()
 
 
 class InterpolationType(StrEnum):
