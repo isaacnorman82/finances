@@ -172,6 +172,20 @@ class CrowdPropertyIngester(CSVFileIngester):
             )
 
 
+class AmexCSVIngester(CSVFileIngester):
+    REQUIRED_FIELDS = {"Date", "Description", "Amount"}
+
+    def create_transaction_from_record(self, record: Dict[str, str]) -> None:
+        self.transactions.append(
+            super().create_transaction(
+                date_str=record["Date"],
+                date_fmt="%d/%m/%Y",
+                amount=Decimal(record["Amount"]) * -1,
+                description=record["Description"],
+            )
+        )
+
+
 class ValueAndContributionIngester(CSVFileIngester):
     REQUIRED_FIELDS = {"Date", "Market value", "Net contributions"}
     date_fmt = "%Y-%m-%d"
@@ -222,6 +236,8 @@ def ingest_file(
             ingest_class = CrowdPropertyIngester
         case IngestType.value_and_contrib_csv:
             ingest_class = ValueAndContributionIngester
+        case IngestType.amex_csv:
+            ingest_class = AmexCSVIngester
         case _:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
