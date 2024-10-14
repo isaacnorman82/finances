@@ -24,7 +24,10 @@ services:
     # Create a .env and set both
     # PGADMIN_DEFAULT_EMAIL=
     # PGADMIN_DEFAULT_PASSWORD=
-      - .env
+    # or set these via another method
+      - path: .env
+        required: false
+
     volumes:
       - pgadmin-data:/var/lib/pgadmin
       - ./pgadmin_servers.json:/pgadmin4/servers.json
