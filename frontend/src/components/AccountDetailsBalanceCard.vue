@@ -40,8 +40,6 @@
 </template>
 
 <script setup lang="ts">
-  import { defineProps } from "vue";
-
   import { AccountSummary, Timescale } from "@/types.d";
 
   import {
