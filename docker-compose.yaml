@@ -33,6 +33,7 @@ services:
 
   backend:
     restart: always
+    pull_policy: build
     build:
       context: .
       dockerfile: dockerfile.backend
@@ -48,6 +49,7 @@ services:
 
   frontend:
     restart: always
+    pull_policy: build
     build:
       context: .
       dockerfile: dockerfile.frontend
