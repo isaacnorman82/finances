@@ -10,7 +10,7 @@ router = APIRouter(prefix="/metadata", tags=["Metadata"])
 API_VERSION = "1.4.0"
 
 
-@router.get("/version", summary="List API version")
+@router.get("/version/", summary="List API version")
 def api_get_version():
     return {"api_version": API_VERSION}
 
