@@ -22,7 +22,7 @@ const convertToCamelCase = (data: any) => {
 };
 
 // Define the base URL for the API
-const BASE_URL = "http://localhost:8000/api";
+const BASE_URL = "/api";
 
 // Create an axios instance
 const apiClient = axios.create({
@@ -230,12 +230,12 @@ export const createDataSeries = async (
 };
 
 export const getAPIVersion = async (): Promise<APIVersionType> => {
-  const response = await apiClient.get<APIVersionType>("/metadata/version");
+  const response = await apiClient.get<APIVersionType>("/metadata/version/");
   return response.data;
 };
 
 export const getIngestValues = async (): Promise<string[]> => {
-  const response = await apiClient.get<string[]>("/metadata/ingest-types");
+  const response = await apiClient.get<string[]>("/metadata/ingest-types/");
   return response.data;
 };
 
