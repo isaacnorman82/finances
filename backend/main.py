@@ -1,4 +1,5 @@
 import logging
+import os
 import traceback
 
 from fastapi import FastAPI, Request
@@ -18,7 +19,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 logging.getLogger("ofxtools").setLevel(logging.ERROR)
 
-ALLOWED_ORIGIN = "http://localhost:3000"
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
 
 
 def _configure_app() -> FastAPI:
@@ -59,9 +60,10 @@ def _configure_app() -> FastAPI:
 
     app.include_router(get_api_router())
 
+    logger.info(f"CORS: {ALLOWED_ORIGINS=}")
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[ALLOWED_ORIGIN],
+        allow_origins=ALLOWED_ORIGINS,
         allow_credentials=True,
         allow_methods=["*"],  # Allow all methods
         allow_headers=["*"],  # Allow all headers
@@ -133,5 +135,4 @@ async def add_cors_headers(request: Request, call_next):
     except Exception as e:
         response = JSONResponse(content={"detail": str(e)}, status_code=500)
 
-    response.headers["Access-Control-Allow-Origin"] = ALLOWED_ORIGIN
     return response

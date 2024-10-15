@@ -19,7 +19,6 @@
     Title,
     Tooltip,
   } from "chart.js";
-  import { defineProps } from "vue";
   import { Bar } from "vue-chartjs";
 
   ChartJS.register(
