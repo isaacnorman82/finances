@@ -7,7 +7,7 @@ from backend import api_models
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/metadata", tags=["Metadata"])
 
-API_VERSION = "1.4.0"
+API_VERSION = "1.5.0"
 
 
 @router.get("/version/", summary="List API version")
