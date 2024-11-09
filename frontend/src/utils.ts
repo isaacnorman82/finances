@@ -184,6 +184,28 @@ export function getBalanceForDate(
   );
 }
 
+export function getLatestBalanceForDate(
+  accountSummary: AccountSummary,
+  date: MonthYear
+): MonthlyBalance | null {
+  const yearMonth = `${date.year}-${date.month.toString().padStart(2, "0")}`;
+
+  // Sort monthlyBalances in descending order to iterate from latest to earliest
+  const sortedBalances = [
+    ...accountSummary.monthlyBalances.monthlyBalances,
+  ].sort((a, b) => b.yearMonth.localeCompare(a.yearMonth));
+
+  for (const balance of sortedBalances) {
+    // Return the balance if it matches or is before the requested date
+    if (balance.yearMonth <= yearMonth) {
+      return balance;
+    }
+  }
+
+  // If no balance is found, return null
+  return null;
+}
+
 export function findAccountSummaryFromLabel(
   accountString: string,
   summaries: AccountSummary[]

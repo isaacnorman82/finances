@@ -1,13 +1,17 @@
 <template>
   <!-- todo move loader below breadcrumbs, ideally loader and breadcrumbs could be in app and the pages could give a loading value-->
   <v-container
-    v-if="!accountSummary || !selectedMonthlyBalance"
+    v-if="
+      !accountSummary ||
+      !selectedMonthlyBalance ||
+      !nonInterpolatedAccountSummary
+    "
     class="d-flex align-center justify-center"
     style="height: 400px"
   >
     <v-progress-circular indeterminate></v-progress-circular>
   </v-container>
-  <v-container fluid v-if="accountSummary && selectedMonthlyBalance">
+  <v-container fluid v-else>
     <v-row>
       <v-col>
         <v-breadcrumbs class="text-h5">
@@ -77,7 +81,9 @@
         </v-card>
       </v-col>
       <v-col cols="4">
-        <AccountDetailsBalanceCard :account-summary="accountSummary" />
+        <AccountDetailsBalanceCard
+          :account-summary="nonInterpolatedAccountSummary"
+        />
       </v-col>
       <v-col cols="4">
         <v-card
@@ -230,6 +236,14 @@
       (summary) => summary.account.id === accountId.value
     );
   });
+
+  const nonInterpolatedAccountSummary = computed<AccountSummary | undefined>(
+    () => {
+      return accountSummariesStore.nonInterpolatedAccountSummaries.find(
+        (summary) => summary.account.id === accountId.value
+      );
+    }
+  );
 
   watch(
     () => route.params.id,

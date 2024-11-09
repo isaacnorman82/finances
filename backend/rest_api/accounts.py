@@ -325,8 +325,13 @@ def api_set_balance(
     account: db_models.Account = Depends(get_account_from_path),
     year_month: Optional[datetime] = Depends(year_month),
     balance: Decimal = Query(...),
+    deposits_to_date: Optional[Decimal] = Query(None),
     db_session: Session = Depends(get_db_session),
 ):
     return crud.set_balance(
-        db_session=db_session, account_id=account.id, balance=balance, year_month=year_month
+        db_session=db_session,
+        account_id=account.id,
+        balance=balance,
+        deposits_to_date=deposits_to_date,
+        year_month=year_month,
     )

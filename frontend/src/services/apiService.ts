@@ -22,7 +22,8 @@ const convertToCamelCase = (data: any) => {
 };
 
 // Define the base URL for the API
-const BASE_URL = "/api";
+// for dev export VITE_API_BASE_URL="http://localhost:8000/api" - .env.development should already have this and be picked up by vite
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
 // Create an axios instance
 const apiClient = axios.create({
@@ -242,6 +243,7 @@ export const getIngestValues = async (): Promise<string[]> => {
 export async function setBalance(
   accountId: number,
   balance: number,
+  deposits_to_date?: number,
   yearMonth?: string
 ): Promise<Transaction[]> {
   const response = await apiClient.post<Transaction[]>(
@@ -250,6 +252,7 @@ export async function setBalance(
     {
       params: {
         balance: balance.toString(),
+        deposits_to_date: deposits_to_date,
         year_month: yearMonth,
       },
     }

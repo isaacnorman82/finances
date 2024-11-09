@@ -163,10 +163,14 @@ def get_balance(
 ) -> List[api_models.BalanceResult]:
     results = []
 
-    # Create base queries
+    # Base queries
     balance_query = db_session.query(
         db_models.Transaction.account_id, func.sum(db_models.Transaction.amount).label("balance")
     )
+    deposits_query = db_session.query(
+        db_models.Transaction.account_id,
+        func.sum(db_models.Transaction.amount).label("deposits_to_date"),
+    ).filter(db_models.Transaction.is_value_adjustment == False)
     max_date_query = db_session.query(
         db_models.Transaction.account_id,
         func.max(db_models.Transaction.date_time).label("last_transaction_date"),
@@ -175,31 +179,38 @@ def get_balance(
     # Apply filters
     if account_ids:
         balance_query = balance_query.filter(db_models.Transaction.account_id.in_(account_ids))
+        deposits_query = deposits_query.filter(db_models.Transaction.account_id.in_(account_ids))
         max_date_query = max_date_query.filter(db_models.Transaction.account_id.in_(account_ids))
     if start_date:
         balance_query = balance_query.filter(db_models.Transaction.date_time >= start_date)
+        deposits_query = deposits_query.filter(db_models.Transaction.date_time >= start_date)
         max_date_query = max_date_query.filter(db_models.Transaction.date_time >= start_date)
     if end_date:
         balance_query = balance_query.filter(db_models.Transaction.date_time <= end_date)
+        deposits_query = deposits_query.filter(db_models.Transaction.date_time <= end_date)
         max_date_query = max_date_query.filter(db_models.Transaction.date_time <= end_date)
 
     # Group by account ID
     balance_query = balance_query.group_by(db_models.Transaction.account_id)
+    deposits_query = deposits_query.group_by(db_models.Transaction.account_id)
     max_date_query = max_date_query.group_by(db_models.Transaction.account_id)
 
-    # Execute the queries and create results
+    # Execute the queries
     balance_results = {row.account_id: row.balance for row in balance_query.all()}
+    deposits_results = {row.account_id: row.deposits_to_date for row in deposits_query.all()}
     max_date_results = {row.account_id: row.last_transaction_date for row in max_date_query.all()}
 
     all_account_ids = account_ids or list(balance_results.keys())
 
     for account_id in all_account_ids:
         balance = balance_results.get(account_id, Decimal(0))
+        deposits_to_date = deposits_results.get(account_id, Decimal(0))
         last_transaction_date = max_date_results.get(account_id)
         results.append(
             api_models.BalanceResult(
                 account_id=account_id,
                 balance=balance,
+                deposits_to_date=deposits_to_date,
                 last_transaction_date=last_transaction_date,
                 start_date=start_date,
                 end_date=end_date,
@@ -213,6 +224,7 @@ def set_balance(
     db_session: Session,
     account_id: int,
     balance: Decimal,
+    deposits_to_date: Optional[Decimal] = None,
     year_month: Optional[datetime] = None,
 ) -> List[api_models.Transaction]:
 
@@ -220,50 +232,98 @@ def set_balance(
         year_month = datetime.now(timezone.utc)
 
     balance = two_dp(balance)
-    current_balance = get_balance(db_session, account_ids=[account_id], end_date=year_month)
+    year_month = round_date_to_month(year_month)  # Ensures month is set correctly
 
-    adjustment = Decimal(balance - current_balance[0].balance)
-    year_month = round_date_to_month(year_month)  # should be already
-
-    # if year_month > datetime.now():
-    #     logger.error(f"Cannot set balance in the future: {year_month}")
-    #     raise HTTPException(
-    #         status_code=status.HTTP_400_BAD_REQUEST,
-    #         detail=f"Cannot set balance in the future: {year_month}",
-    #     )
-    #     # todo either remove this limit or maybe apply it to all transactions?  is it really an issue?
-
-    if adjustment == 0:
-        logger.info(f"Balance already set to {balance} for {year_month}")
-        return []
-
-    transactions = [
-        api_models.TransactionCreate(
-            account_id=account_id,
-            date_time=year_month,
-            amount=adjustment,
-            transaction_type="set-balance",
-            description=f"Balance adjustment to set monthly balance to {balance}",
-        )
+    # Get current balance and contributions
+    current_balance_result = get_balance(db_session, account_ids=[account_id], end_date=year_month)[
+        0
     ]
+    current_balance = current_balance_result.balance
+    current_contributions = current_balance_result.deposits_to_date
 
-    last_transaction_month = round_date_to_month(
-        get_last_transaction_dates(db_session, account_ids=[account_id]).get(account_id, year_month)
+    balance_adjustment = balance - current_balance
+    contribution_adjustment = (
+        (deposits_to_date - current_contributions) if deposits_to_date is not None else Decimal(0)
     )
 
-    if last_transaction_month > year_month:
+    # No adjustment needed if both balance and contributions match
+    if balance_adjustment == 0 and contribution_adjustment == 0:
+        logger.info(
+            f"Balance and contributions already set to {balance} and {current_contributions} for {year_month}"
+        )
+        return []
+
+    transactions = []
+
+    if deposits_to_date == None:
+        # if deposits_to_date is None it means we're doing a simple balance set
+        desc_type = "Balance"
+        trans_type = "set-balance"
+    else:
+        # we would set is_value_adjustment to true, but the rules currently overwrite
+        # to false unless the trans type matches, so for now it's easier to just set the trans type
+        # however we should fix it so is_value_adjustment is honoured
+        desc_type = "Value"
+        trans_type = "Value Adjustment"
+
+    # Adjust for contributions if deposits_to_date is provided and differs from current
+    if contribution_adjustment != 0:
         transactions.append(
             api_models.TransactionCreate(
                 account_id=account_id,
-                date_time=year_month + relativedelta(months=1),
-                amount=Decimal(adjustment * -1),
-                transaction_type="set-balance",
-                description=f"Balance counter-adjustment to cancel previous month balance adjustment",
+                date_time=year_month,
+                amount=contribution_adjustment,
+                transaction_type="Deposit",
+                description=f"Contribution adjustment to set total contributions to {deposits_to_date}",
+                is_value_adjustment=False,
             )
         )
 
+    # Adjust for balance
+    if balance_adjustment != 0:
+        transactions.append(
+            api_models.TransactionCreate(
+                account_id=account_id,
+                date_time=year_month,
+                amount=balance_adjustment,
+                transaction_type=trans_type,
+                description=f"{desc_type} adjustment to set balance to {balance}",
+                is_value_adjustment=False,
+            )
+        )
+
+    logger.info(transactions)
+
+    # Handle adjustment in next month if this is not the most recent month
+    last_transaction_month = round_date_to_month(
+        get_last_transaction_dates(db_session, account_ids=[account_id]).get(account_id, year_month)
+    )
+    if last_transaction_month > year_month:
+        if contribution_adjustment != 0:
+            transactions.append(
+                api_models.TransactionCreate(
+                    account_id=account_id,
+                    date_time=year_month + relativedelta(months=1),
+                    amount=-contribution_adjustment,
+                    transaction_type="Deposit",
+                    description="Undo previous month contribution adjustment",
+                    is_value_adjustment=False,
+                )
+            )
+        if balance_adjustment != 0:
+            transactions.append(
+                api_models.TransactionCreate(
+                    account_id=account_id,
+                    date_time=year_month + relativedelta(months=1),
+                    amount=-balance_adjustment,
+                    transaction_type=trans_type,
+                    description=f"Undo previous month {desc_type} adjustment",
+                    is_value_adjustment=False,
+                )
+            )
+
+    # Create transactions in the database
     results = create_transactions(db_session, transactions)
-    # logger.info(f"{results=}")
     return results
 
 

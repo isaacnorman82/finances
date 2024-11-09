@@ -7,12 +7,29 @@
         title="Set Balance"
         subtitle="Manually set the balance for a given month"
       >
-        <v-card-text
-          >Insert an artificial transaction to achieve the specified end
-          balance.
+        <v-card-text>
+          <p>
+            Insert an artificial transaction to achieve the specified end
+            balance. Useful if you don't have a suitable transaction file to
+            upload.
+          </p>
+          <br />
+          <p>
+            Choose between just setting a balance or setting both value and
+            contributions for accounts that grow.
+          </p>
         </v-card-text>
         <v-card-text>
           <v-form ref="formRef" v-model="isFormValid">
+            <v-row dence>
+              <v-radio-group inline v-model="selectedType">
+                <v-radio label="Balance Adjustment" value="balance"></v-radio>
+                <v-radio
+                  label="Value and Contributions"
+                  value="valueAndContrib"
+                ></v-radio>
+              </v-radio-group>
+            </v-row>
             <v-row dense>
               <v-col cols="auto">
                 <v-select
@@ -37,13 +54,12 @@
                 />
               </v-col>
             </v-row>
-
-            <v-row dense class="mt-4">
+            <v-row v-if="selectedType === 'balance'" dense class="mt-4">
               <v-col cols="auto">
                 <v-text-field
                   max-width="220px"
-                  v-model="formData.amount"
-                  label="Enter Amount"
+                  v-model="formData.balance"
+                  label="Enter Balance"
                   prepend-icon="mdi-currency-gbp"
                   type="number"
                   step="0.01"
@@ -51,6 +67,48 @@
                   :rules="currencyRules"
                   variant="outlined"
                   required
+                  persistent-hint
+                  :hint="`Existing Value £${
+                    selectedMonthYearBalance?.endBalance || 0
+                  }`"
+                />
+              </v-col>
+            </v-row>
+            <v-row v-else>
+              <v-col cols="auto">
+                <v-text-field
+                  max-width="220px"
+                  v-model="formData.balance"
+                  label="Enter Value"
+                  prepend-icon="mdi-currency-gbp"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  :rules="currencyRules"
+                  variant="outlined"
+                  required
+                  persistent-hint
+                  :hint="`Existing Value £${
+                    selectedMonthYearBalance?.endBalance || 0
+                  }`"
+                />
+              </v-col>
+              <v-col cols="auto">
+                <v-text-field
+                  max-width="220px"
+                  v-model="formData.contrib"
+                  label="Enter Contributions"
+                  prepend-icon="mdi-currency-gbp"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  :rules="currencyRules"
+                  variant="outlined"
+                  required
+                  persistent-hint
+                  :hint="`Existing Value £${
+                    selectedMonthYearBalance?.depositsToDate || 0
+                  }`"
                 />
               </v-col>
             </v-row>
@@ -82,15 +140,17 @@
 <script setup lang="ts">
   import { setBalance } from "@/services/apiService";
   import { AccountSummary, MonthYear } from "@/types.d";
-  import { formatTransaction } from "@/utils";
+  import { formatTransaction, getLatestBalanceForDate } from "@/utils";
   import { ref } from "vue";
 
+  // set balance should always be given a non-interpolated accountSummary
   const props = defineProps<{
     accountSummary: AccountSummary;
   }>();
 
   const isFormValid = ref(true);
   const formRef = ref();
+  const selectedType = ref("balance");
 
   // Array of month names
   const months: string[] = [
@@ -115,7 +175,24 @@
   const formData = ref({
     month: months[currentMonthYear.month - 1], // Month is 1-based, array is 0-based
     year: currentMonthYear.year,
-    amount: "", // For currency input
+    balance: "", // Balance Mode - currency field
+    value: "", // Value and Contrib mode - total value
+    contrib: "", // Value and Cotrib mode - total contrib
+  });
+
+  // Computed property for combined year-month format
+  const selectedMonthYear = computed(() => {
+    const monthNumber = (months.indexOf(formData.value.month) + 1)
+      .toString()
+      .padStart(2, "0");
+    return `${formData.value.year}-${monthNumber}`;
+  });
+
+  const selectedMonthYearBalance = computed(() => {
+    return getLatestBalanceForDate(
+      props.accountSummary,
+      new MonthYear(selectedMonthYear.value)
+    );
   });
 
   // Validation rules for the year input
@@ -136,16 +213,22 @@
         console.log(valid.valid);
         try {
           // Convert month name back to a number (e.g., "January" -> "01")
-          const monthNumber = (months.indexOf(formData.value.month) + 1)
-            .toString()
-            .padStart(2, "0");
-          const yearMonth = `${formData.value.year}-${monthNumber}`;
+          // const monthNumber = (months.indexOf(formData.value.month) + 1)
+          //   .toString()
+          //   .padStart(2, "0");
+          // const yearMonth = `${formData.value.year}-${monthNumber}`;
+
+          var depositsToDate = undefined;
+          if (selectedType.value == "valueAndContrib") {
+            depositsToDate = parseFloat(formData.value.contrib);
+          }
 
           // Call the setBalance function
           const transactions = await setBalance(
-            props.accountSummary.account.id, // Replace with your actual account ID
-            parseFloat(formData.value.amount),
-            yearMonth
+            props.accountSummary.account.id,
+            parseFloat(formData.value.balance),
+            depositsToDate,
+            selectedMonthYear.value
           );
 
           if (transactions.length === 0) {
@@ -178,7 +261,8 @@
   const resetForm = () => {
     formData.value.month = months[currentMonthYear.month - 1];
     formData.value.year = currentMonthYear.year;
-    formData.value.amount = "";
+    formData.value.balance = "";
+    formData.value.contrib = "";
 
     if (formRef.value) {
       formRef.value.resetValidation();
