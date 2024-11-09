@@ -37,8 +37,6 @@ services:
     build:
       context: .
       dockerfile: dockerfile.backend
-      args:
-        FORCE_REBUILD: "1"  # temp until github actions setup - used to force portainer to rebuild images
     ports:
       - '8000:8000'
     environment:
@@ -55,8 +53,6 @@ services:
     build:
       context: .
       dockerfile: dockerfile.frontend
-      args:
-        FORCE_REBUILD: "1"  # temp until github actions setup - used to force portainer to rebuild images
     ports:
       - '3000:3000'
     depends_on:
