@@ -93,6 +93,8 @@ class IsValueAdjContainsAny(RuleCondition):
         return [val.lower() for val in value]
 
     def evaluate(self, transaction: Transaction):
+        # todo currently we overwrite is_value_adjustment even if it was specifically set true
+        # when the transaction was created
         input = getattr(transaction, self.read_col).lower()
         transaction.is_value_adjustment = any(val in input for val in self.values)
         # logger.info(f"{input=}, {transaction.is_value_adjustment=} {self.values=}")
@@ -143,6 +145,7 @@ class IngestResult(BaseModel):
 class BalanceResult(BaseModel):
     account_id: int
     balance: Decimal
+    deposits_to_date: Decimal
     last_transaction_date: Optional[datetime] = None  # optional in case no transactions were found
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
@@ -150,6 +153,10 @@ class BalanceResult(BaseModel):
     @field_validator("balance", mode="after")
     def validate_dp(cls, value: Decimal) -> Decimal:
         return validate_decimal_places(value, "balance", cls.__name__)
+
+    @field_validator("deposits_to_date", mode="after")
+    def validate_dp_dtd(cls, value: Decimal) -> Decimal:
+        return validate_decimal_places(value, "deposits_to_date", cls.__name__)
 
 
 class MonthlyBalance(BaseModel):

@@ -57,6 +57,7 @@ export interface Transaction {
 export interface BalanceResult {
   accountId: number;
   balance: string;
+  depositsToDate: string;
   lastTransactionDate?: string | null;
   startDate?: string | null;
   endDate?: string | null;
