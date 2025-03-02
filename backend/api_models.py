@@ -253,3 +253,7 @@ class BackupV1(Backup):
     backup_datetime: str = str(datetime.now(timezone.utc))
     accounts: List[AccountBackup] = []
     data_series: List[DataSeriesCreate] = []
+
+    @property
+    def backup_datetime(self) -> str:
+        return str(datetime.now(timezone.utc))
