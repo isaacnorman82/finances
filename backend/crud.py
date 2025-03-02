@@ -241,10 +241,12 @@ def set_balance(
     current_balance = current_balance_result.balance
     current_contributions = current_balance_result.deposits_to_date
 
-    balance_adjustment = balance - current_balance
     contribution_adjustment = (
         (deposits_to_date - current_contributions) if deposits_to_date is not None else Decimal(0)
     )
+
+    # need to work out balance_adjustment after contribution_adjustment so they don't double contribute
+    balance_adjustment = balance - (current_balance + contribution_adjustment)
 
     # No adjustment needed if both balance and contributions match
     if balance_adjustment == 0 and contribution_adjustment == 0:
