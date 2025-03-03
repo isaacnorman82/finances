@@ -7,13 +7,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from enum import StrEnum, auto
 from typing import List, Literal, Optional, Union
 
-from pydantic import (
-    BaseModel,
-    ConfigDict,
-    FieldValidationInfo,
-    computed_field,
-    field_validator,
-)
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
 
 logger = logging.getLogger(__name__)
 
@@ -237,6 +231,7 @@ class AccountBackup(BaseModel):
 
 class Backup(BaseModel, ABC):
     version: Literal["invalid"] = "invalid"
+    backup_datetime: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Config:
         use_enum_values = True
@@ -250,10 +245,5 @@ class Backup(BaseModel, ABC):
 
 class BackupV1(Backup):
     version: Literal["1.0.0"] = "1.0.0"
-    backup_datetime: str = str(datetime.now(timezone.utc))
     accounts: List[AccountBackup] = []
     data_series: List[DataSeriesCreate] = []
-
-    @property
-    def backup_datetime(self) -> str:
-        return str(datetime.now(timezone.utc))
