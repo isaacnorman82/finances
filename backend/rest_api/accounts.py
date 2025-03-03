@@ -133,8 +133,7 @@ def api_export(background_tasks: BackgroundTasks, db_session: Session = Depends(
     logger.info("Getting backup data")
     backup_data = crud.get_account_backup(db_session=db_session)
     logger.info("Saving backup data to zip")
-    backup_datetime_obj = datetime.fromisoformat(backup_data.backup_datetime)
-    backup_datetime_str = backup_datetime_obj.strftime("%Y_%m_%d_%H_%M_%S")
+    backup_datetime_str = backup_data.backup_datetime.strftime("%Y_%m_%d_%H_%M_%S")
     json_filename = f"backup_{backup_datetime_str}.json"
     zip_filename = f"backup_{backup_datetime_str}.zip"
     _, zip_file_path_str = mkstemp(suffix=".zip")
