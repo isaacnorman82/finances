@@ -152,7 +152,7 @@ export function sumMonthlyBalances(
   accountSummaries.forEach((summary) => {
     summary.monthlyBalances.monthlyBalances.forEach((balance) => {
       if (
-        balance.yearMonth >= startYearMonth &&
+        balance.yearMonth > startYearMonth &&
         balance.yearMonth <= endYearMonth
       ) {
         totalBalance += parseFloat(balance.monthlyBalance);
