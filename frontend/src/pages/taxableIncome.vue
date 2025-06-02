@@ -42,7 +42,6 @@
             v-for="(company, index) in companies"
             :key="company.name"
             :dot-color="getDotColor(index)"
-            side="top"
           >
             <div>{{ company.date }} - {{ company.name }}</div>
           </v-timeline-item>
