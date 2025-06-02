@@ -116,6 +116,9 @@
         </v-card-text>
 
         <v-card-actions>
+          <v-btn text color="primary" @click="useExistingValue"
+            >Use Existing Value</v-btn
+          >
           <v-spacer></v-spacer>
           <v-btn
             text="Submit"
@@ -176,7 +179,6 @@
     month: months[currentMonthYear.month - 1], // Month is 1-based, array is 0-based
     year: currentMonthYear.year,
     balance: "", // Balance Mode - currency field
-    value: "", // Value and Contrib mode - total value
     contrib: "", // Value and Cotrib mode - total contrib
   });
 
@@ -205,6 +207,14 @@
     (v: number) => !!v || "Amount is required",
     (v: string) => /^(-)?\d+(\.\d{1,2})?$/.test(v) || "Max 2 decimal places",
   ];
+
+  const useExistingValue = () => {
+    const val = selectedMonthYearBalance.value;
+    if (val) {
+      formData.value.balance = val.endBalance?.toString() || "";
+      formData.value.contrib = val.depositsToDate?.toString() || "";
+    }
+  };
 
   const handleSubmit = async () => {
     if (formRef.value) {
