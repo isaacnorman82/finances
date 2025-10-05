@@ -21,7 +21,11 @@
             variant="text"
           />
           <interpolate-toggle v-model="interpolate" class="ml-4" />
-          <account-type-toggle v-model="accountTypes" class="ml-4" />
+          <account-type-toggle
+            v-model="accountTypes"
+            filter-key="index"
+            class="ml-4"
+          />
         </v-toolbar>
       </v-col>
     </v-row>
@@ -113,14 +117,7 @@
   import { ChartData } from "chart.js";
   import { computed } from "vue";
 
-  const accountTypes = ref<string[]>([
-    "Current/Credit",
-    "Savings",
-    "Asset",
-    "Loan",
-    "Pension",
-    "isClosed",
-  ]);
+  const accountTypes = ref<string[]>([]);
 
   const interpolate = ref<boolean>(true);
 

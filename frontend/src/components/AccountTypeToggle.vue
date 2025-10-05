@@ -28,7 +28,17 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, watch } from "vue";
+  import { useAccountFilterStore } from "@/stores/accountFilter";
+  import { onMounted, ref, watch } from "vue";
+
+  const defaultAccountTypes = [
+    "Current/Credit",
+    "Savings",
+    "Asset",
+    "Loan",
+    "Pension",
+    "isClosed",
+  ];
 
   const props = defineProps({
     modelValue: {
@@ -39,13 +49,35 @@
       type: String as () => "default" | "comfortable" | "compact",
       default: "default",
     },
+    filterKey: {
+      type: String,
+      default: "common",
+    },
   });
 
   const emit = defineEmits(["update:modelValue"]);
 
-  const localAccountTypes = ref(props.modelValue);
+  const store = useAccountFilterStore();
+  const key = props.filterKey;
 
-  watch(localAccountTypes, (newVal) => {
-    emit("update:modelValue", newVal);
+  // Load saved from store (cookies) or default
+  const saved = store.get(key);
+  const localAccountTypes = ref<string[]>(
+    saved === undefined ? defaultAccountTypes : saved
+  );
+
+  // Emit initial value to parent so v-model is in sync
+  onMounted(() => {
+    emit("update:modelValue", localAccountTypes.value);
   });
+
+  // Watch changes: persist to store and emit to parent
+  watch(
+    localAccountTypes,
+    (newVal) => {
+      store.set(key, newVal);
+      emit("update:modelValue", newVal);
+    },
+    { deep: true }
+  );
 </script>

@@ -24,7 +24,7 @@
             variant="outlined"
           />
           <interpolate-toggle v-model="interpolate" class="ml-4" />
-          <account-type-toggle v-model="accountTypes" class="ml-4" />
+          <account-type-toggle v-model="accountTypes" filter-key="accounts" class="ml-4" />
         </v-toolbar>
         <div class="ma-10" align="center" v-if="!tableData.length">
           No accounts to show.
@@ -77,7 +77,7 @@
   } from "@/utils";
 
   const search = ref("");
-  const accountTypes = ref<string[]>(["Current/Credit", "Savings"]);
+  const accountTypes = ref<string[]>([]);
 
   const router = useRouter();
   const interpolate = ref<boolean>(true);
