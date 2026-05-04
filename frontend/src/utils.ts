@@ -143,7 +143,7 @@ export function sumMonthlyBalances(
     const startDate = new Date(now);
     startDate.setMonth(now.getMonth() - timescale);
     startYearMonth = `${startDate.getFullYear()}-${String(
-      startDate.getMonth() + 1
+      startDate.getMonth() + 2
     ).padStart(2, "0")}`;
   }
 
